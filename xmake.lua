@@ -9,6 +9,7 @@ end
 local packages = {
     "nlohmann_json v3.11.3",
     "spdlog v1.14.1",
+    "minhook",
 }
 
 for _, package in ipairs(packages) do
@@ -25,15 +26,31 @@ elseif is_plat("linux") then
     set_arch("x86_64")
 end
 
-target("Project")
+target("task_manager")
     set_default(true)
 
     set_kind("binary")
     add_files("src/entry/main.cpp")
 
-    -- set_kind("shared")
-    -- add_files("src/entry/dllmain.cpp")
+    add_includedirs("3rd/imgui-1.91.8/backends")
+    add_includedirs("3rd/imgui-1.91.8")
+    add_files("3rd/imgui-1.91.8/imgui.cpp")
+    add_files("3rd/imgui-1.91.8/imgui_tables.cpp")
+    add_files("3rd/imgui-1.91.8/imgui_draw.cpp")
+    add_files("3rd/imgui-1.91.8/imgui_widgets.cpp")
+    add_files("3rd/imgui-1.91.8/backends/imgui_impl_dx11.cpp")
+    add_files("3rd/imgui-1.91.8/backends/imgui_impl_win32.cpp")
 
     set_pcxxheader("src/base/stdafx.h")
     add_files("src/base/*.cpp")
-    -- add_files("src/*.cpp")
+    add_files("src/task_manager/*.cpp")
+
+target("task_handler")
+    set_default(true)
+
+    set_kind("shared")
+    add_files("src/entry/dllmain.cpp")
+
+    set_pcxxheader("src/base/stdafx.h")
+    add_files("src/base/*.cpp")
+    add_files("src/task_handler/*.cpp")
