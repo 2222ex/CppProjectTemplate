@@ -6,19 +6,23 @@
 
 #include "../base/logger.h"
 
+#include "tchar.h"
+
 class Injector
 {
 private:
     /* data */
 
 public:
-    int InjectQueueUserAPC(PCWSTR pszLibFile, DWORD dwProcessId);
+    int InjectQueueUserAPC(PCWSTR pszLibFile, DWORD dwProcessId, std::string &errMsg);
+    int InjectUseCreateRemoteThread(LPCTSTR pszLibFile, DWORD dwPID, std::string &errMsg);
+    int UnLoadLibrary(LPCTSTR szDllName, DWORD dwPID, std::string &errMsg);
 
-    Injector(/* args */);
-    ~Injector();
+    Injector();
+    ~Injector() = default;
 };
 
-class InjectorSingleton : Singleton<Injector, true>
+class InjectorSingleton : public Singleton<Injector, true>
 {
 };
 

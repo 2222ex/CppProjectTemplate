@@ -1,43 +1,44 @@
 #include "injector.h"
 #include <tlhelp32.h>
 
-int Injector::InjectQueueUserAPC(PCWSTR pszLibFile, DWORD dwProcessId)
+int Injector::InjectQueueUserAPC(PCWSTR pszLibFile, DWORD dwProcessId, std::string &errMsg)
 {
     auto injector_log = Logger::get_instance().get_named_logger("injector");
+
     int cb = (lstrlenW(pszLibFile) + 1) * sizeof(wchar_t);
 
     HANDLE hProcess = OpenProcess(PROCESS_VM_OPERATION | PROCESS_VM_WRITE, FALSE, dwProcessId);
     if (hProcess == NULL)
     {
-        SPDLOG_LOGGER_INFO(injector_log, "[-] Error: Could not open process for PID {}", dwProcessId);
+        errMsg = fmt::format("[-] Error: Could not open process for PID {}", dwProcessId);
         return 1;
     }
 
     LPVOID pszLibFileRemote = (PWSTR) VirtualAllocEx(hProcess, NULL, cb, MEM_COMMIT, PAGE_READWRITE);
     if (pszLibFileRemote == NULL)
     {
-        SPDLOG_LOGGER_INFO(injector_log, "[-] Error: Could not allocate memory inside PID {}", dwProcessId);
+        errMsg = fmt::format("[-] Error: Could not allocate memory inside PID {}", dwProcessId);
         return 1;
     }
 
     LPVOID pfnThreadRtn = (LPVOID) GetProcAddress(GetModuleHandle(TEXT("Kernel32")), "LoadLibraryW");
     if (pfnThreadRtn == NULL)
     {
-        SPDLOG_LOGGER_INFO(injector_log, "[-] Error: Could not find LoadLibraryA function inside kernel32.dll library");
+        errMsg = fmt::format("[-] Error: Could not find LoadLibraryA function inside kernel32.dll library");
         return 1;
     }
 
     DWORD n = WriteProcessMemory(hProcess, pszLibFileRemote, (PVOID) pszLibFile, cb, NULL);
     if (n == 0)
     {
-        SPDLOG_LOGGER_INFO(injector_log, "[-] Error: Could not write any bytes into the PID {} address space", dwProcessId);
+        errMsg = fmt::format("[-] Error: Could not write any bytes into the PID {} address space", dwProcessId);
         return 1;
     }
 
     HANDLE hSnapshot = CreateToolhelp32Snapshot(TH32CS_SNAPTHREAD, 0);
     if (hSnapshot == INVALID_HANDLE_VALUE)
     {
-        SPDLOG_LOGGER_INFO(injector_log, "[-] Error: Unable to get thread information");
+        errMsg = fmt::format("[-] Error: Unable to get thread information");
         return 1;
     }
 
@@ -58,21 +59,31 @@ int Injector::InjectQueueUserAPC(PCWSTR pszLibFile, DWORD dwProcessId)
                 // SPDLOG_LOGGER_INFO(injector_log, "[+] Using thread: {}", threadId);
                 HANDLE hThread = OpenThread(THREAD_SET_CONTEXT, FALSE, threadId);
                 if (hThread == NULL)
-                    SPDLOG_LOGGER_INFO(injector_log, "[-] Error: Can't open thread. Continuing to try other threads...");
+                {
+                    errMsg = fmt::format("[-] Error: Can't open thread. Continuing to try other threads...");
+                }
                 else
                 {
                     DWORD dwResult = QueueUserAPC((PAPCFUNC) pfnThreadRtn, hThread, (ULONG_PTR) pszLibFileRemote);
-                    if (!dwResult)
-                        SPDLOG_LOGGER_INFO(injector_log, "[-] Error: Couldn't call QueueUserAPC on thread> Continuing to try othrt threads...");
-                    // else
-                    //     SPDLOG_LOGGER_INFO(injector_log, "[+] Success: DLL injected via CreateRemoteThread()");
                     CloseHandle(hThread);
+
+                    if (!dwResult)
+                    {
+                        errMsg = fmt::format("[-] Error: Couldn't call QueueUserAPC on thread> Continuing to try othrt threads...");
+                    }
+                    else
+                    {
+                        errMsg = "[+] Success: DLL injected via CreateRemoteThread()";
+                        break;
+                    }
                 }
             }
         }
     }
     if (!threadId)
-        SPDLOG_LOGGER_INFO(injector_log, "[-] Error: No threads found in thr target process");
+    {
+        errMsg = "[-] Error: No threads found in thr target process";
+    }
 
     CloseHandle(hSnapshot);
     CloseHandle(hProcess);
@@ -80,10 +91,86 @@ int Injector::InjectQueueUserAPC(PCWSTR pszLibFile, DWORD dwProcessId)
     return 0;
 }
 
-Injector::Injector(/* args */)
+int Injector::InjectUseCreateRemoteThread(LPCTSTR szDllPath, DWORD dwPID, std::string &errMsg)
 {
+    HANDLE hProcess = NULL, hThread = NULL;
+    HMODULE hMod = NULL;
+    LPVOID pRemoteBuf = NULL;
+
+    DWORD dwBufSize = (DWORD) (_tcslen(szDllPath) + 1) * sizeof(TCHAR);
+    LPTHREAD_START_ROUTINE pThreadProc;
+
+    if (!(hProcess = OpenProcess(PROCESS_ALL_ACCESS, FALSE, dwPID)))
+    {
+        errMsg = fmt::format("OpenProcess({}) failed!!! [{}]\n", dwPID, GetLastError());
+        return 1;
+    }
+
+    pRemoteBuf = VirtualAllocEx(hProcess, NULL, dwBufSize, MEM_COMMIT, PAGE_READWRITE);
+
+    WriteProcessMemory(hProcess, pRemoteBuf, (LPVOID) szDllPath, dwBufSize, NULL);
+
+    hMod = GetModuleHandle("kernel32.dll");
+    pThreadProc = (LPTHREAD_START_ROUTINE) GetProcAddress(hMod, "LoadLibraryA");
+
+    hThread = CreateRemoteThread(hProcess, NULL, 0, pThreadProc, pRemoteBuf, 0, NULL);
+    WaitForSingleObject(hThread, INFINITE);
+
+    CloseHandle(hThread);
+    CloseHandle(hProcess);
+
+    errMsg = "Used CreateRemoteThread inject success ";
+
+    return TRUE;
 }
 
-Injector::~Injector()
+int Injector::UnLoadLibrary(LPCTSTR szDllName, DWORD dwPID, std::string &errMsg)
+{
+    BOOL bMore = FALSE, bFound = FALSE;
+    HANDLE hSnapshot, hProcess, hThread;
+    HMODULE hModule = NULL;
+    MODULEENTRY32 me = {sizeof(me)};
+    LPTHREAD_START_ROUTINE pThreadProc;
+
+    // 使用TH32CS_SNAPMODULE参数，获取加载到notepad进程的DLL名称
+    hSnapshot = CreateToolhelp32Snapshot(TH32CS_SNAPMODULE, dwPID);
+
+    bMore = Module32First(hSnapshot, &me);
+    for (; bMore; bMore = Module32Next(hSnapshot, &me))
+    {
+        if (!_tcsicmp((LPCTSTR) me.szModule, szDllName) ||
+            !_tcsicmp((LPCTSTR) me.szExePath, szDllName))
+        {
+            bFound = TRUE;
+            break;
+        }
+    }
+
+    if (!bFound)
+    {
+        errMsg = "dll not found";
+        CloseHandle(hSnapshot);
+        return 1;
+    }
+
+    if (!(hProcess = OpenProcess(PROCESS_ALL_ACCESS, FALSE, dwPID)))
+    {
+        errMsg = fmt::format("OpenProcess({}) failed!!! [{}]\n", dwPID, GetLastError());
+        return 1;
+    }
+
+    hModule = GetModuleHandle("kernel32.dll");
+    pThreadProc = (LPTHREAD_START_ROUTINE) GetProcAddress(hModule, "FreeLibrary");
+    hThread = CreateRemoteThread(hProcess, NULL, 0, pThreadProc, me.modBaseAddr, 0, NULL);
+    WaitForSingleObject(hThread, INFINITE);
+
+    CloseHandle(hThread);
+    CloseHandle(hProcess);
+    CloseHandle(hSnapshot);
+
+    return 0;
+}
+
+Injector::Injector(/* args */)
 {
 }

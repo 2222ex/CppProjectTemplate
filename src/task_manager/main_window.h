@@ -23,6 +23,9 @@ public:
     IDXGISwapChain *g_pSwapChain = nullptr;
     ID3D11RenderTargetView *g_mainRenderTargetView = nullptr;
 
+    std::string tip_text;
+    DWORD target_PID;
+
     bool Init();
     bool InitD3D(HWND hWnd);
     void CleanupD3D();

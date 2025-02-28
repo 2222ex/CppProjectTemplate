@@ -1,9 +1,12 @@
 ﻿#include "main_window.h"
 
+#include "injector.h"
+
 extern IMGUI_IMPL_API LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam); // Use ImGui::GetCurrentContext()
 
 MainWindow::MainWindow(/* args */)
 {
+    tip_text = "Waiting";
 }
 
 LRESULT CALLBACK WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
@@ -91,6 +94,8 @@ bool MainWindow::Init()
 
     ImVec4 clear_color = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
 
+    auto &injector = InjectorSingleton::instance();
+
     while (msg.message != WM_QUIT)
     {
         if (PeekMessage(&msg, nullptr, 0U, 0U, PM_REMOVE))
@@ -107,11 +112,40 @@ bool MainWindow::Init()
 
         ImGui::Begin("Simple UI", nullptr, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_AlwaysAutoResize);
         ImGui::Text("Hello, DirectX 11 + ImGui!");
-        ImGui::SliderFloat("Slider", &slider_value, 0.0f, 1.0f);
-        if (ImGui::Button("Click Me"))
+        ImGui::Text(tip_text.c_str());
+
+        static char buffer[256] = {0};
+
+        ImGui::InputText("Process PID", buffer, sizeof(buffer));
+        std::string str_buffer = buffer;
+        if (!str_buffer.empty())
         {
-            MessageBox(hwnd, "Button Clicked!", "Info", MB_OK);
+            target_PID = std::stoul(str_buffer);
+            std::cout << "target_PID: " << target_PID << std::endl;
         }
+
+        auto dll_path = std::filesystem::current_path() / "task_handler.dll";
+
+        if (ImGui::Button("APC Inject"))
+        {
+
+            injector.InjectQueueUserAPC(dll_path.wstring().c_str(), target_PID, tip_text);
+        }
+
+        ImGui::SameLine();
+
+        if (ImGui::Button("CreateRemoteThread Inject"))
+        {
+            injector.InjectUseCreateRemoteThread(dll_path.string().c_str(), target_PID, tip_text);
+        }
+
+        ImGui::SameLine();
+
+        if (ImGui::Button("UnLoad"))
+        {
+            injector.UnLoadLibrary(dll_path.string().c_str(), target_PID, tip_text);
+        }
+
         ImGui::End();
 
         ImGui::Render();
