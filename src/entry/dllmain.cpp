@@ -1,5 +1,10 @@
 ﻿#include "../base/stdafx.h"
 
+void Init()
+{
+    MessageBoxA(NULL, "Inject!", "Success", MB_OK);
+}
+
 bool __stdcall DllMain(HANDLE hInstance, DWORD dwReason, LPVOID lpReserved)
 {
 
@@ -7,7 +12,8 @@ bool __stdcall DllMain(HANDLE hInstance, DWORD dwReason, LPVOID lpReserved)
     {
     case DLL_PROCESS_ATTACH:
     {
-        MessageBoxA(NULL, "Inject!", "Success", MB_OK);
+
+        Init();
         break;
     }
     case DLL_THREAD_ATTACH:
