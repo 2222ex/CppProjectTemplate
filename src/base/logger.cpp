@@ -1,66 +1,42 @@
 ﻿#include "logger.h"
 
-Logger::Logger() :
-    file_max_size(1048576 * 20), // 20MB
-    file_max_num(20),
-    level(spdlog::level::info)
+Logger::Logger()
 {
+    auto max_size = 1048576 * 10; // 2mb
+    auto max_files = 1;
+    rootLogger = spdlog::rotating_logger_mt("Topo", "task_handler.txt", max_size, max_files);
+    rootLogger->set_pattern("[%H:%M:%S %z][%l]: %v"); // (%@)
+    rootLogger->flush_on(spdlog::level::trace);
 }
-Logger &Logger::get_instance()
+
+Logger &Logger::getInstance()
 {
     static Logger instance;
     return instance;
 }
 
-std::shared_ptr<spdlog::logger> Logger::get_main_logger()
+std::shared_ptr<spdlog::logger> Logger::Log()
 {
-    return get_instance()._get_main_logger();
+    return getInstance().rootLogger;
 }
 
-std::shared_ptr<spdlog::logger> Logger::get_named_logger(std::string &&logger_name)
+std::shared_ptr<spdlog::logger> Logger::getThreadLogger(std::string thread_name)
 {
-    return get_instance()._get_named_logger(logger_name);
-}
+    if (loggers.count(thread_name))
+        return loggers[thread_name];
 
-void Logger::reset_logger_level(std::shared_ptr<spdlog::logger> logger)
-{
-    if (logger == nullptr)
-        logger = get_main_logger();
+    auto max_size = 1048576 * 10; // 50mb
+    auto max_files = 2;
+    auto logger = spdlog::rotating_logger_mt(thread_name, "log/" + thread_name + ".txt", max_size, max_files);
+    logger->set_pattern("[%H:%M:%S %z][" + thread_name + "][%l]: %v"); // (%@)
+    logger->flush_on(spdlog::level::trace);
 
-    auto before_level = logger->level();
-    auto after_level = get_instance().level;
-    if (before_level == after_level)
-    {
-        SPDLOG_LOGGER_INFO(get_main_logger(), "log level is same");
-        return;
-    }
-    SPDLOG_LOGGER_INFO(get_main_logger(), "level from {} to {}", spdlog::level::to_string_view(before_level), spdlog::level::to_string_view(after_level));
-    get_instance()._reset_logger_level(logger);
-}
+    loggers[thread_name] = logger;
 
-std::shared_ptr<spdlog::logger> Logger::_get_main_logger()
-{
-    return get_named_logger("main");
-}
-
-std::shared_ptr<spdlog::logger> Logger::_get_named_logger(std::string &logger_name)
-{
-    auto logger = spdlog::get(logger_name);
-    if (!logger)
-    {
-        logger = spdlog::rotating_logger_mt(logger_name, "log/" + logger_name + ".txt", file_max_size, file_max_num);
-        logger->set_pattern("[%H:%M:%S.%e][%t] [" + logger_name + "][%l]: %v"); // (%@)
-        spdlog::set_level(spdlog::level::trace);
-        logger->flush_on(spdlog::level::trace);
-    }
     return logger;
 }
 
-void Logger::_set_logger_level(spdlog::level::level_enum level)
+std::shared_ptr<spdlog::logger> Logger::getNamedLogger(std::string &&logger_name)
 {
-    this->level = level;
-}
-void Logger::_reset_logger_level(std::shared_ptr<spdlog::logger> logger)
-{
-    logger->set_level(level);
+    return getInstance().getThreadLogger(logger_name);
 }

@@ -1,6 +1,7 @@
-﻿#include "main_window.h"
+﻿#include <httplib.h>
 
 #include "injector.h"
+#include "main_window.h"
 
 extern IMGUI_IMPL_API LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam); // Use ImGui::GetCurrentContext()
 
@@ -87,6 +88,7 @@ bool MainWindow::Init()
     ImGui::CreateContext();
     ImGui_ImplWin32_Init(hwnd);
     ImGui_ImplDX11_Init(g_pd3dDevice, g_pd3dDeviceContext);
+    ImGui::StyleColorsClassic();
 
     bool show_demo_window = true;
     float slider_value = 0.0f;
@@ -121,14 +123,23 @@ bool MainWindow::Init()
         if (!str_buffer.empty())
         {
             target_PID = std::stoul(str_buffer);
-            std::cout << "target_PID: " << target_PID << std::endl;
+            // std::cout << "target_PID: " << target_PID << std::endl;
         }
+
+        static char buf2[256] = {0};
+        if (ImGui::InputText("Process Name", buf2, sizeof(buffer)))
+        {
+        }
+        std::string str_buf2 = buf2;
 
         auto dll_path = std::filesystem::current_path() / "task_handler.dll";
 
         if (ImGui::Button("APC Inject"))
         {
-
+            if (!str_buf2.empty())
+            {
+                target_PID = injector.FindProcessId(buf2);
+            }
             injector.InjectQueueUserAPC(dll_path.wstring().c_str(), target_PID, tip_text);
         }
 
@@ -136,14 +147,63 @@ bool MainWindow::Init()
 
         if (ImGui::Button("CreateRemoteThread Inject"))
         {
+            if (!str_buf2.empty())
+            {
+                target_PID = injector.FindProcessId(buf2);
+            }
             injector.InjectUseCreateRemoteThread(dll_path.string().c_str(), target_PID, tip_text);
+        }
+
+        static std::string http_tip = "Waiting for call http";
+        ImGui::Text(http_tip.c_str());
+
+        static httplib::Client cli("localhost", 24960);
+
+        if (ImGui::Button("f1"))
+        {
+            if (auto res = cli.Get("/f1"))
+            {
+                http_tip = res->body;
+            }
         }
 
         ImGui::SameLine();
 
-        if (ImGui::Button("UnLoad"))
+        if (ImGui::Button("Detach"))
         {
-            injector.UnLoadLibrary(dll_path.string().c_str(), target_PID, tip_text);
+            if (auto res = cli.Get("/Detach"))
+            {
+                http_tip = res->body;
+                if (!str_buf2.empty())
+                {
+                    target_PID = injector.FindProcessId(buf2);
+                }
+                injector.UnLoadLibrary(dll_path.string().c_str(), target_PID, tip_text);
+            }
+        }
+
+        if (ImGui::Button("DumpInventoryToConsole"))
+        {
+            if (auto res = cli.Get("/DumpInventoryToConsole"))
+            {
+                http_tip = res->body;
+            }
+        }
+
+        if (ImGui::Button("GetInventoryCount"))
+        {
+            if (auto res = cli.Get("/GetInventoryCount"))
+            {
+                http_tip = res->body;
+            }
+        }
+
+        if (ImGui::Button("MyGetItemVectorInfo"))
+        {
+            if (auto res = cli.Get("/MyGetItemVectorInfo"))
+            {
+                http_tip = res->body;
+            }
         }
 
         ImGui::End();

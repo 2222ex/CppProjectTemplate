@@ -6,7 +6,6 @@
 int main(int argc, char *argv[])
 {
     std::cout << "Hello, World!" << std::endl;
-    SPDLOG_LOGGER_INFO(Logger::get_main_logger(), "Hello, World!");
     MainWindowSingleton::instance().Init();
     return 0;
 }

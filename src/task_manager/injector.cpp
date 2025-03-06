@@ -3,7 +3,6 @@
 
 int Injector::InjectQueueUserAPC(PCWSTR pszLibFile, DWORD dwProcessId, std::string &errMsg)
 {
-    auto injector_log = Logger::get_instance().get_named_logger("injector");
 
     int cb = (lstrlenW(pszLibFile) + 1) * sizeof(wchar_t);
 
@@ -168,7 +167,33 @@ int Injector::UnLoadLibrary(LPCTSTR szDllName, DWORD dwPID, std::string &errMsg)
     CloseHandle(hProcess);
     CloseHandle(hSnapshot);
 
+    errMsg = fmt::format("Unload Success");
+
     return 0;
+}
+
+DWORD Injector::FindProcessId(LPCTSTR szProcessName)
+{
+    DWORD dwPID = 0xFFFFFFFF;
+    HANDLE hSnapShot = INVALID_HANDLE_VALUE;
+    PROCESSENTRY32 pe;
+
+    pe.dwSize = sizeof(PROCESSENTRY32);
+    hSnapShot = CreateToolhelp32Snapshot(TH32CS_SNAPALL, NULL);
+
+    Process32First(hSnapShot, &pe);
+    do
+    {
+        if (!_tcsicmp(szProcessName, (LPCTSTR) pe.szExeFile))
+        {
+            dwPID = pe.th32ProcessID;
+            break;
+        }
+    } while (Process32Next(hSnapShot, &pe));
+
+    CloseHandle(hSnapShot);
+
+    return dwPID;
 }
 
 Injector::Injector(/* args */)
