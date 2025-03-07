@@ -178,8 +178,8 @@ bool MainWindow::Init()
                 {
                     target_PID = injector.FindProcessId(buf2);
                 }
-                injector.UnLoadLibrary(dll_path.string().c_str(), target_PID, tip_text);
             }
+            injector.UnLoadLibrary(dll_path.string().c_str(), target_PID, tip_text);
         }
 
         if (ImGui::Button("DumpInventoryToConsole"))

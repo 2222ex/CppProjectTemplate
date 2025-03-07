@@ -54,6 +54,32 @@ void Init()
     http_thread.detach();
 }
 
+void Detach()
+{
+    Logger::Log()->info("Prepare to detach this module");
+    auto &client = ClientModuleSingleton::instance();
+
+    client.Detach();
+
+    for (size_t i = 0; i < module_list.size(); i++)
+    {
+        for (auto &pair : module_list.at(i)->hookInfoMap)
+        {
+            auto hookInfo = pair.second;
+            if (int res = MH_DisableHook(hookInfo.pTarget) != MH_OK)
+            {
+                Logger::Log()->error("MH_DisableHook {} failed,status: {}", pair.first, res);
+                continue;
+            }
+        }
+    }
+
+    if (MH_Uninitialize() != MH_OK)
+    {
+        Logger::Log()->error("MH_Uninitialize failed");
+    }
+}
+
 bool __stdcall DllMain(HANDLE hInstance, DWORD dwReason, LPVOID lpReserved)
 {
 

@@ -4,12 +4,13 @@
 
 ClientModule::ClientModule(/* args */)
 {
+    useToolUnkParam1 = (char *) malloc(sizeof(1024));
 }
 
-// a1: CEconTool_CrateKey* this
-// a2: C_EconItemView* key
-// a3: C_EconItemView* crate
-void ClientModule::MyUseTool(__int64 a1, char *key, char *crate)
+// a1: ???
+// a2: char *key
+// a3: char *crate
+void ClientModule::MyUseTool(uintptr_t a1, char *key, char *crate)
 {
     Logger::Log()->info("ClientModule::MyUseTool");
 
@@ -21,14 +22,13 @@ void ClientModule::MyUseTool(__int64 a1, char *key, char *crate)
 PVOID ClientModule::MyGetLocalCSInventory()
 {
     // search string: CCSGO_HudRosettaSelector and look down
-    return (PVOID) * reinterpret_cast<DWORD_PTR *>(reinterpret_cast<DWORD_PTR>(GetCSInventoryManager()) + 0x3D1A0);
+    return (PVOID) * reinterpret_cast<uintptr_t *>(reinterpret_cast<uintptr_t>(GetCSInventoryManager()) + 0x3D1A0);
 }
 
-__int64 ClientModule::MyGetItemVectorItem(int i)
+uint64_t ClientModule::MyGetItemVectorItem(int i)
 {
     // [[[rcx+0x28] + rbp*8]]
-    return *(uint64_t *) (*(uint64_t *) ((uint64_t) MyGetLocalCSInventory() + 40) + 8 * i);
-    // return (*(uint64_t *) ((uint64_t) MyGetLocalCSInventory() + 40) + 8 * i);
+    return *(uintptr_t *) (*(uintptr_t *) ((uintptr_t) MyGetLocalCSInventory() + 40) + 8 * i);
 }
 
 int ClientModule::MyGetItemVectorCount()
@@ -36,29 +36,54 @@ int ClientModule::MyGetItemVectorCount()
     return *((unsigned int *) ((uintptr_t) MyGetLocalCSInventory() + 0x20));
 }
 
-void ClientModule::MyGetItemVectorInfo()
+void ClientModule::GetItemVectorInfo()
 {
-    Logger::Log()->info("MyGetItemVectorInfo");
+    Logger::Log()->info("GetItemVectorInfo");
 
     int count = MyGetItemVectorCount();
     Logger::Log()->info("count: {}", count);
 
     for (size_t i = 0; i < count; i++)
     {
-        __int64 itemAddress = MyGetItemVectorItem(i);
+        uintptr_t itemAddress = MyGetItemVectorItem(i);
         Logger::Log()->info("itemAddress: {:#x}", itemAddress);
 
-        uint64_t itemId = (*(__int64(__fastcall **)(__int64))(*(uint64_t *) MyGetItemVectorItem(i) + 120i64))(MyGetItemVectorItem(i));
+        // (*(__int64(__fastcall **)(__int64))(*(uint64_t *) MyGetItemVectorItem(i) + 120i64))(MyGetItemVectorItem(i));
+        uint64_t itemId = GetCEconItemViewItemId(itemAddress);
+        // uint64_t itemId = (*(__int64(__fastcall **)(__int64))(*(uint64_t *) MyGetItemVectorItem(i) + 120i64))(MyGetItemVectorItem(i));
         Logger::Log()->info("itemId: {}", itemId);
     }
+}
+
+// 48 83 EC ? 48 8B 05 ? ? ? ? 48 8D 15
+// search string: ItemPreviewPanel or CharPreviewPanel
+uintptr_t ClientModule::GetMainMenuPanelPointer()
+{
+    return base + 0x1AF64D8;
+}
+
+uint64_t ClientModule::GetCEconItemViewItemId(uintptr_t CEconItemView_item)
+{
+    return (*(__int64(__fastcall **)(__int64))(*(uint64_t *) CEconItemView_item + 120i64))(CEconItemView_item);
+}
+
+char *ClientModule::GetCEconItemViewValveDefName(uintptr_t CEconItemView_item)
+{
+    typedef uintptr_t(__fastcall * pGetNamePointer)(uintptr_t item);
+    pGetNamePointer GetNamePointer = reinterpret_cast<pGetNamePointer>(base + 0xc81e40);
+    uintptr_t temp = GetNamePointer(CEconItemView_item);
+    return *(char **) (temp + 496);
 }
 
 bool ClientModule::InitClient()
 {
     GetCSInventoryManager = reinterpret_cast<pCSInventoryManager>(base + 0x5189B0);
 
-    //
+    // search string: "      %s (ID %llu) at backpack slot %d\n" or "(CLIENT) Inventory:\n"
     DumpInventoryToConsole = reinterpret_cast<pDumpInventoryToConsole>(base + 0x5197b0);
+
+    // search string: GetChosenActionItemsCount ,找到这个函数的返回值，跟踪这个返回值
+    IsItemCanOpenCrate = reinterpret_cast<pIsItemCanOpenCrate>(base + 0xc8ce30);
 
     // DumpInventoryToConsole = reinterpret_cast<pDumpInventoryToConsole>(base + 0xc2d660);
 
@@ -74,15 +99,6 @@ bool ClientModule::InitClient()
 
 bool ClientModule::Detach()
 {
-    for (auto &pair : hookInfoMap)
-    {
-        auto hookInfo = pair.second;
-
-        if (MH_DisableHook(hookInfo.pTarget) != MH_OK)
-        {
-            Logger::Log()->error("MH_DisableHook {} failed", pair.first);
-            continue;
-        }
-    }
+    free(useToolUnkParam1);
     return true;
 }

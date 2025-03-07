@@ -13,24 +13,33 @@ public:
     ClientModule(/* args */);
     ~ClientModule() = default;
 
-    typedef void(__fastcall *pUseTool)(__int64 a1, char*  a2, char*  a3);
+    typedef void(__fastcall *pUseTool)(uintptr_t a1, char *a2, char *a3);
     pUseTool oUseTool;
-    static void MyUseTool(__int64 a1, char* a2, char* a3);
+    static void MyUseTool(uintptr_t a1, char *a2, char *a3);
 
     typedef PVOID (*pCSInventoryManager)();
     pCSInventoryManager GetCSInventoryManager;
 
     PVOID MyGetLocalCSInventory();
-    __int64 MyGetItemVectorItem(int i);
+    uintptr_t MyGetItemVectorItem(int i);
     int MyGetItemVectorCount();
-    void MyGetItemVectorInfo();
-    
+    void GetItemVectorInfo();
+    uintptr_t GetMainMenuPanelPointer();
+    uint64_t GetCEconItemViewItemId(uintptr_t item);
+    char* GetCEconItemViewValveDefName(uintptr_t CEconItemView_item);
+
+    //
+    // a3: 4
+    typedef bool(__fastcall *pIsItemCanOpenCrate)(uintptr_t CEconItemView_item, uintptr_t CEconItemView_crate, unsigned int a3);
+    pIsItemCanOpenCrate IsItemCanOpenCrate;
 
     typedef void(__fastcall *pDumpInventoryToConsole)(PVOID a1, bool bRoot);
     pDumpInventoryToConsole DumpInventoryToConsole;
 
     bool InitClient();
     bool Detach();
+
+    char *useToolUnkParam1;
 };
 
 class ClientModuleSingleton : public Singleton<ClientModule, true>

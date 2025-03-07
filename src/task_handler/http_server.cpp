@@ -1,6 +1,7 @@
 #include "http_server.h"
 
 #include "../base/logger.h"
+#include "auto_open_crate.h"
 #include "client_module.h"
 
 #include <MinHook.h>
@@ -10,16 +11,7 @@
 bool g_bIsNeedQuit;
 bool g_bIsQuit;
 
-void Detach()
-{
-    Logger::Log()->info("Prepare to detach this module");
-    auto &client = ClientModuleSingleton::instance();
-    client.Detach();
-    if (MH_Uninitialize() != MH_OK)
-    {
-        Logger::Log()->error("MH_Uninitialize failed");
-    }
-}
+void Detach();
 
 bool InitHttpServer()
 {
@@ -70,7 +62,7 @@ bool InitHttpServer()
         [&](const httplib::Request &req, httplib::Response &res)
         {
             auto &client = ClientModuleSingleton::instance();
-            client.MyGetItemVectorInfo();
+            client.GetItemVectorInfo();
 
             res.set_content("call MyGetItemVectorInfo", "text/plain"); // appliation/json
         });
@@ -80,10 +72,35 @@ bool InitHttpServer()
         [&](const httplib::Request &req, httplib::Response &res)
         {
             auto &client = ClientModuleSingleton::instance();
-            char crate[] = "42367912968";
-            char key[] = "42367944202";
-            client.oUseTool(0x162c5491e00, key, crate);
+            char crate[] = "2";
+            char key[] = "3";
+            client.oUseTool((uintptr_t) client.useToolUnkParam1, key, crate);
             res.set_content("call UseTool", "text/plain"); // appliation/json
+        });
+
+    svr.Get(
+        "/GetInventory",
+        [&](const httplib::Request &req, httplib::Response &res)
+        {
+            auto &aoc = AutoOpenCrateSingleton::instance();
+            aoc.GetInventory();
+            res.set_content("call GetInventory", "text/plain"); // appliation/json
+        });
+
+    svr.Get(
+        "/OpenCrateTest",
+        [&](const httplib::Request &req, httplib::Response &res)
+        {
+            auto &aoc = AutoOpenCrateSingleton::instance();
+
+            aoc.GetInventory();
+
+            AutoOpenCrate::OpenCrateRequest openCrateRequest;
+            openCrateRequest.crate_name = "crate_valve_1";
+            openCrateRequest.count = 5;
+
+            aoc.OpenCrate(openCrateRequest);
+            res.set_content("call OpenCrateTest", "text/plain"); // appliation/json
         });
 
     // svr.Post(
