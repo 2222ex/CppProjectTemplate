@@ -20,13 +20,13 @@ public:
     typedef PVOID (*pCSInventoryManager)();
     pCSInventoryManager GetCSInventoryManager;
 
-    PVOID MyGetLocalCSInventory();
+    PVOID GetLocalCSInventory();
     uintptr_t MyGetItemVectorItem(int i);
-    int MyGetItemVectorCount();
+    int GetItemVectorCount();
     void GetItemVectorInfo();
-    uintptr_t GetMainMenuPanelPointer();
+
     uint64_t GetCEconItemViewItemId(uintptr_t item);
-    char* GetCEconItemViewValveDefName(uintptr_t CEconItemView_item);
+    char *GetCEconItemViewValveDefName(uintptr_t CEconItemView_item);
 
     //
     // a3: 4

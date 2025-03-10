@@ -3,6 +3,7 @@
 
 #include "../base/logger.h"
 #include "../base/singleton.h"
+#include <nlohmann/json.hpp>
 
 class AutoOpenCrate
 {
@@ -26,10 +27,19 @@ public:
     {
         std::string crate_name;
         int count;
+        bool is_need_tool;
     };
+    NLOHMANN_DEFINE_TYPE_INTRUSIVE(OpenCrateRequest, crate_name, count, is_need_tool)
+
+    struct OpenCrateResult
+    {
+        std::string msg;
+        bool is_success;
+    };
+    NLOHMANN_DEFINE_TYPE_INTRUSIVE(OpenCrateResult, msg, is_success)
 
     void GetInventory();
-    void OpenCrate(OpenCrateRequest openCrateRequest);
+    void OpenCrate(OpenCrateRequest openCrateRequest, OpenCrateResult &openCrateResult);
 };
 
 class AutoOpenCrateSingleton : public Singleton<AutoOpenCrate, true>

@@ -10,6 +10,7 @@ ClientModule::ClientModule(/* args */)
 // a1: ???
 // a2: char *key
 // a3: char *crate
+// search string: UseTool
 void ClientModule::MyUseTool(uintptr_t a1, char *key, char *crate)
 {
     Logger::Log()->info("ClientModule::MyUseTool");
@@ -19,28 +20,30 @@ void ClientModule::MyUseTool(uintptr_t a1, char *key, char *crate)
     ClientModuleSingleton::instance().oUseTool(a1, key, crate);
 }
 
-PVOID ClientModule::MyGetLocalCSInventory()
+PVOID ClientModule::GetLocalCSInventory()
 {
     // search string: CCSGO_HudRosettaSelector and look down
     return (PVOID) * reinterpret_cast<uintptr_t *>(reinterpret_cast<uintptr_t>(GetCSInventoryManager()) + 0x3D1A0);
 }
 
+// in function: DumpInventoryToConsole
 uint64_t ClientModule::MyGetItemVectorItem(int i)
 {
     // [[[rcx+0x28] + rbp*8]]
-    return *(uintptr_t *) (*(uintptr_t *) ((uintptr_t) MyGetLocalCSInventory() + 40) + 8 * i);
+    return *(uintptr_t *) (*(uintptr_t *) ((uintptr_t) GetLocalCSInventory() + 40) + 8 * i);
 }
 
-int ClientModule::MyGetItemVectorCount()
+// in function: DumpInventoryToConsole
+int ClientModule::GetItemVectorCount()
 {
-    return *((unsigned int *) ((uintptr_t) MyGetLocalCSInventory() + 0x20));
+    return *((unsigned int *) ((uintptr_t) GetLocalCSInventory() + 0x20));
 }
 
 void ClientModule::GetItemVectorInfo()
 {
     Logger::Log()->info("GetItemVectorInfo");
 
-    int count = MyGetItemVectorCount();
+    int count = GetItemVectorCount();
     Logger::Log()->info("count: {}", count);
 
     for (size_t i = 0; i < count; i++)
@@ -55,18 +58,13 @@ void ClientModule::GetItemVectorInfo()
     }
 }
 
-// 48 83 EC ? 48 8B 05 ? ? ? ? 48 8D 15
-// search string: ItemPreviewPanel or CharPreviewPanel
-uintptr_t ClientModule::GetMainMenuPanelPointer()
-{
-    return base + 0x1AF64D8;
-}
-
+// in function: DumpInventoryToConsole
 uint64_t ClientModule::GetCEconItemViewItemId(uintptr_t CEconItemView_item)
 {
     return (*(__int64(__fastcall **)(__int64))(*(uint64_t *) CEconItemView_item + 120i64))(CEconItemView_item);
 }
 
+// in function: DumpInventoryToConsole
 char *ClientModule::GetCEconItemViewValveDefName(uintptr_t CEconItemView_item)
 {
     typedef uintptr_t(__fastcall * pGetNamePointer)(uintptr_t item);
@@ -83,7 +81,17 @@ bool ClientModule::InitClient()
     DumpInventoryToConsole = reinterpret_cast<pDumpInventoryToConsole>(base + 0x5197b0);
 
     // search string: GetChosenActionItemsCount ,找到这个函数的返回值，跟踪这个返回值
-    IsItemCanOpenCrate = reinterpret_cast<pIsItemCanOpenCrate>(base + 0xc8ce30);
+    // IsItemCanOpenCrate = reinterpret_cast<pIsItemCanOpenCrate>(base + 0xc8ce30);
+    IsItemCanOpenCrate = (pIsItemCanOpenCrate) (base + 0xc8ce30);
+    if (IsItemCanOpenCrate == nullptr)
+    {
+        Logger::Log()->error("IsItemCanOpenCrate: null");
+        return false;
+    }
+    else
+    {
+        Logger::Log()->info("IsItemCanOpenCrate: {}", fmt::ptr(IsItemCanOpenCrate));
+    }
 
     // DumpInventoryToConsole = reinterpret_cast<pDumpInventoryToConsole>(base + 0xc2d660);
 

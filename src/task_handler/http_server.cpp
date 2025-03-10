@@ -33,7 +33,7 @@ bool InitHttpServer()
         [](const httplib::Request &req, httplib::Response &res)
         {
             auto &client = ClientModuleSingleton::instance();
-            client.DumpInventoryToConsole(client.MyGetLocalCSInventory(), true);
+            client.DumpInventoryToConsole(client.GetLocalCSInventory(), true);
             res.set_content("call DumpInventoryToConsole", "text/plain"); // appliation/json
         });
 
@@ -52,7 +52,7 @@ bool InitHttpServer()
         {
             auto &client = ClientModuleSingleton::instance();
             nlohmann::json resp = {
-                {"count", client.MyGetItemVectorCount()}};
+                {"count", client.GetItemVectorCount()}};
 
             res.set_content(resp.dump(), "text/plain"); // appliation/json
         });
@@ -93,14 +93,33 @@ bool InitHttpServer()
         {
             auto &aoc = AutoOpenCrateSingleton::instance();
 
-            aoc.GetInventory();
-
             AutoOpenCrate::OpenCrateRequest openCrateRequest;
             openCrateRequest.crate_name = "crate_valve_1";
-            openCrateRequest.count = 5;
+            openCrateRequest.count = 2;
+            openCrateRequest.is_need_tool = true;
 
-            aoc.OpenCrate(openCrateRequest);
-            res.set_content("call OpenCrateTest", "text/plain"); // appliation/json
+            AutoOpenCrate::OpenCrateResult openCrateResult;
+
+            aoc.OpenCrate(openCrateRequest, openCrateResult);
+
+            nlohmann::json json = openCrateResult;
+            res.set_content(json.dump(), "text/plain");
+        });
+
+    svr.Post(
+        "/OpenCrate",
+        [&](const httplib::Request &req, httplib::Response &res)
+        {
+            auto &aoc = AutoOpenCrateSingleton::instance();
+
+            AutoOpenCrate::OpenCrateRequest openCrateRequest = nlohmann::json::parse(req.body).get<AutoOpenCrate::OpenCrateRequest>();
+
+            AutoOpenCrate::OpenCrateResult openCrateResult;
+
+            aoc.OpenCrate(openCrateRequest, openCrateResult);
+
+            nlohmann::json json = openCrateResult;
+            res.set_content(json.dump(), "application/json");
         });
 
     // svr.Post(

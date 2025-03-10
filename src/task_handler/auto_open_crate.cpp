@@ -10,8 +10,12 @@ void AutoOpenCrate::GetInventory()
 {
     Logger::Log()->info("AutoOpenCrate::GetInventory");
 
+    inventory.clear();
+
     auto &client = ClientModuleSingleton::instance();
-    auto inventory_count = client.MyGetItemVectorCount();
+    auto inventory_count = client.GetItemVectorCount();
+
+    Logger::Log()->info("inventory_count: {}", inventory_count);
 
     for (size_t i = 0; i < inventory_count; i++)
     {
@@ -23,6 +27,11 @@ void AutoOpenCrate::GetInventory()
         item.item_id = client.GetCEconItemViewItemId(item.CEconItemView_item);
         Logger::Log()->info("item_id: {}", item.item_id);
 
+        if (item.item_id == 17293822569102708641ULL || item.item_id == 17293822569110896676)
+        {
+            continue;
+        }
+
         item.valve_def_name = client.GetCEconItemViewValveDefName(item.CEconItemView_item);
         Logger::Log()->info("valve_def_name: {}", item.valve_def_name);
 
@@ -31,8 +40,10 @@ void AutoOpenCrate::GetInventory()
 }
 
 // 一次开一种箱子
-void AutoOpenCrate::OpenCrate(OpenCrateRequest openCrateRequest)
+void AutoOpenCrate::OpenCrate(OpenCrateRequest openCrateRequest, OpenCrateResult &openCrateResult)
 {
+    GetInventory();
+
     Logger::Log()->info("AutoOpenCrate::OpenCrate");
 
     // std::map<std::string, std::unordered_set<std::string>> crate_key_map = {};
@@ -48,30 +59,40 @@ void AutoOpenCrate::OpenCrate(OpenCrateRequest openCrateRequest)
         if (item.valve_def_name == openCrateRequest.crate_name)
         {
             crate_item = item;
+            Logger::Log()->info("Crate found: {}", item.valve_def_name);
+            break;
         }
     }
 
     if (crate_item.item_id == 0)
     {
         // 没有找到这个箱子
-        Logger::Log()->info("Crate not found: {}", openCrateRequest.crate_name);
+
+        openCrateResult.msg = fmt::format("Crate not found: {}", openCrateRequest.crate_name);
+        openCrateResult.is_success = false;
         return;
     }
-
-    // 找到能开这个箱子的钥匙的名字
-    for (auto &item : inventory)
+    if (openCrateRequest.is_need_tool)
     {
-        if (client.IsItemCanOpenCrate(item.CEconItemView_item, crate_item.CEconItemView_item, 4))
+
+        // 找到能开这个箱子的钥匙的名字
+        for (auto &item : inventory)
         {
-            correct_key_name = item.valve_def_name;
-            break;
+            if (client.IsItemCanOpenCrate(item.CEconItemView_item, crate_item.CEconItemView_item, 4))
+            {
+                correct_key_name = item.valve_def_name;
+                break;
+            }
         }
-    }
 
-    // TODO: 判断是否是纪念包 不需要钥匙的箱子
-    if (correct_key_name.empty())
-    {
-        return;
+        if (correct_key_name.empty())
+        {
+            Logger::Log()->info("correct_key_name empty");
+
+            openCrateResult.msg = fmt::format("correct_key_name empty");
+            openCrateResult.is_success = false;
+            return;
+        }
     }
 
     Logger::Log()->info("Found correct_key_name: {}", correct_key_name);
@@ -85,14 +106,40 @@ void AutoOpenCrate::OpenCrate(OpenCrateRequest openCrateRequest)
         {
             crate_ids.push_back(item.item_id);
         }
-        else if (item.valve_def_name == correct_key_name)
+        else if (openCrateRequest.is_need_tool && item.valve_def_name == correct_key_name)
         {
             key_ids.push_back(item.item_id);
         }
     }
+
     if (crate_ids.size() < openCrateRequest.count)
     {
-        Logger::Log()->info("no enough crates,current: {},need: {}", crate_ids.size(), openCrateRequest.count);
+        openCrateResult.msg = fmt::format("no enough crates,current: {},need: {}", crate_ids.size(), openCrateRequest.count);
+        openCrateResult.is_success = false;
         return;
     }
+    else if (openCrateRequest.is_need_tool && key_ids.size() < openCrateRequest.count)
+    {
+        openCrateResult.msg = fmt::format("no enough keys,current: {},need: {}", key_ids.size(), openCrateRequest.count);
+        openCrateResult.is_success = false;
+        return;
+    }
+
+    for (size_t i = 0; i < openCrateRequest.count; i++)
+    {
+        std::string keyStr = std::to_string(key_ids[i]);
+        std::string crateStr = std::to_string(crate_ids[i]);
+
+        const char *szKeyId = keyStr.c_str();
+        const char *szCrateId = crateStr.c_str();
+        Logger::Log()->info("key_ids[i]: {}, crate_ids[i]: {}", key_ids[i], crate_ids[i]);
+        Logger::Log()->info("szKeyId: {}, szCrateId: {}", szKeyId, szCrateId);
+        client.MyUseTool((uintptr_t) client.useToolUnkParam1, (char *) szKeyId, (char *) szCrateId);
+        std::this_thread::sleep_for(std::chrono::seconds(6));
+    }
+
+    openCrateResult.msg = fmt::format("success");
+    openCrateResult.is_success = true;
+
+    return;
 }
