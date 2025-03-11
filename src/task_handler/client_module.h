@@ -43,13 +43,15 @@ public:
     // bool init_GetCSInventoryManager(uint64_t addr);
     // bool init_localCSInventory(uint64_t addr);
     // bool init_IsItemCanOpenCrate(uint64_t addr);
-    
+
     uintptr_t localCSInventory;
 
-    
     // a3: 4
     typedef bool(__fastcall *pIsItemCanOpenCrate)(uintptr_t CEconItemView_item, uintptr_t CEconItemView_crate, unsigned int a3);
     pIsItemCanOpenCrate IsItemCanOpenCrate;
+
+    typedef uintptr_t(__fastcall *pGetNamePointer)(uintptr_t item);
+    pGetNamePointer GetNamePointer;
 
     bool InitClient();
     bool Detach();

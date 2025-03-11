@@ -5,6 +5,7 @@ Logger::Logger()
     auto max_size = 1048576 * 10; // 2mb
     auto max_files = 1;
     rootLogger = spdlog::rotating_logger_mt("Topo", "task_handler.txt", max_size, max_files);
+    rootLogger->set_level(spdlog::level::trace);
     rootLogger->set_pattern("[%H:%M:%S %z][%l]: %v"); // (%@)
     rootLogger->flush_on(spdlog::level::trace);
 }
