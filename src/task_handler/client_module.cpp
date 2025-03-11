@@ -78,59 +78,79 @@ char *ClientModule::GetCEconItemViewValveDefName(uintptr_t CEconItemView_item)
     return *(char **) (temp + 496);
 }
 
-bool ClientModule::init_localCSInventory()
-{
-    Logger::Log()->info("ClientModule::init_localCSInventory");
-
-    // search string: CCSGO_HudRosettaSelector and look down
-    uintptr_t pattern_addr = search_pattern_in_module(miModule, hexstring2shorts("f2 0f 11 4c 24 ?? e8 ?? ?? ?? ?? 48 8b 88 ?? ?? ?? ??"));
-    if (pattern_addr == 0)
-    {
-        return false;
-    }
-
-    int offset = 14;
-    Logger::Log()->info("pattern_addr + offset: {:#x}", pattern_addr + offset);
-
-    uint32_t val = *reinterpret_cast<uint32_t *>(pattern_addr + offset);
-    Logger::Log()->info("val: {:#x}", val);
-
-    localCSInventory = *reinterpret_cast<uintptr_t *>((reinterpret_cast<uintptr_t>(GetCSInventoryManager()) + val));
-    Logger::Log()->info("localCSInventory: {:#x}", localCSInventory);
-
-    return true;
-}
-
 bool ClientModule::InitClient()
 {
-    GetCSInventoryManager = reinterpret_cast<pCSInventoryManager>(base + 0x5189B0);
+    auto f_init_GetCSInventoryManager = [this](uint64_t addr)
+    {
+        GetCSInventoryManager = reinterpret_cast<pCSInventoryManager>(base + 0x5189B0);
+        return true;
+    };
 
-    init_localCSInventory();
+    auto f_init_localCSInventory = [this](uint64_t addr)
+    {
+        uint32_t val = *reinterpret_cast<uint32_t *>(addr);
+        Logger::Log()->info("val: {:#x}", val);
+
+        localCSInventory = *reinterpret_cast<uintptr_t *>((reinterpret_cast<uintptr_t>(GetCSInventoryManager()) + val));
+        Logger::Log()->info("localCSInventory: {:#x}", localCSInventory);
+
+        return true;
+    };
+
+    auto f_init_IsItemCanOpenCrate = [this](uint64_t addr)
+    {
+        IsItemCanOpenCrate = (pIsItemCanOpenCrate) (addr);
+
+        return true;
+    };
+
+    auto f_init_UseTool = [this](uint64_t addr)
+    {
+        hookInfoMap["UseTool"] = {(LPVOID) (addr), &ClientModule::MyUseTool, reinterpret_cast<LPVOID *>(&oUseTool)};
+        return true;
+    };
+
+    pattern_map = {
+
+        {"CSInventoryManager", {"", 0, f_init_GetCSInventoryManager}},
+
+        // search string: CCSGO_HudRosettaSelector and look down
+        {"localCSInventory", {"f2 0f 11 4c 24 ?? e8 ?? ?? ?? ?? 48 8b 88 ?? ?? ?? ??", 14, f_init_localCSInventory}},
+
+        // search string: GetChosenActionItemsCount ,找到这个函数的返回值，跟踪这个返回值
+        {"IsItemCanOpenCrate", {"FF 50 ?? 48 8B E8 48 85 C0 0F 84 ?? ?? ?? ?? 65 48 8B 0C 25 ?? ?? ?? ??", -0x36, f_init_IsItemCanOpenCrate}},
+
+        // search string: UseTool
+        {"UseTool", {"49 8b d8 4c 8b f9  48 85 db 0f 84 ?? ?? ?? ?? 48 89 6c 24 ??", -0x10, f_init_UseTool}}
+
+    };
+
+    for (auto pair : pattern_map)
+    {
+        uintptr_t pattern_addr = search_pattern_in_module(miModule, hexstring2shorts(pair.second.pattern));
+        if (pattern_addr == 0)
+        {
+            Logger::Log()->error("{} pattern not found!", pair.first);
+            return false;
+        }
+        int offset = pair.second.offset;
+
+        Logger::Log()->info("init_{}", pair.first);
+        Logger::Log()->info("pattern_addr + offset: {:#x}", pattern_addr + offset);
+
+        if (pair.second.func(pattern_addr + offset) == false)
+        {
+            Logger::Log()->error("init {} failed", pair.first);
+            return false;
+        }
+    }
 
     // search string: "      %s (ID %llu) at backpack slot %d\n" or "(CLIENT) Inventory:\n"
     DumpInventoryToConsole = reinterpret_cast<pDumpInventoryToConsole>(base + 0x5197b0);
 
-    // search string: GetChosenActionItemsCount ,找到这个函数的返回值，跟踪这个返回值
-    // IsItemCanOpenCrate = reinterpret_cast<pIsItemCanOpenCrate>(base + 0xc8ce30);
-    IsItemCanOpenCrate = (pIsItemCanOpenCrate) (base + 0xc8ce30);
-    if (IsItemCanOpenCrate == nullptr)
-    {
-        Logger::Log()->error("IsItemCanOpenCrate: null");
-        return false;
-    }
-    else
-    {
-        Logger::Log()->info("IsItemCanOpenCrate: {}", fmt::ptr(IsItemCanOpenCrate));
-    }
-
     // DumpInventoryToConsole = reinterpret_cast<pDumpInventoryToConsole>(base + 0xc2d660);
 
     Logger::Log()->info("GetCSInventoryManager(): {}", fmt::ptr(GetCSInventoryManager()));
-
-    // DumpInventoryToConsole(*reinterpret_cast<CSInventoryManager *>(GetCSInventoryManager()), false);
-
-    // search string: UseTool
-    hookInfoMap["UseTool"] = {(LPVOID) (base + 0xB4DB60), &ClientModule::MyUseTool, reinterpret_cast<LPVOID *>(&oUseTool)};
 
     return false;
 }
@@ -140,3 +160,33 @@ bool ClientModule::Detach()
     free(useToolUnkParam1);
     return true;
 }
+
+// bool ClientModule::init_GetCSInventoryManager(uint64_t addr)
+// {
+//     GetCSInventoryManager = reinterpret_cast<pCSInventoryManager>(base + 0x5189B0);
+//     return true;
+// }
+
+// bool ClientModule::init_localCSInventory(uint64_t addr)
+// {
+//     Logger::Log()->info("ClientModule::init_localCSInventory");
+
+//     Logger::Log()->info("addr: {:#x}", addr);
+
+//     uint32_t val = *reinterpret_cast<uint32_t *>(addr);
+//     Logger::Log()->info("val: {:#x}", val);
+
+//     localCSInventory = *reinterpret_cast<uintptr_t *>((reinterpret_cast<uintptr_t>(GetCSInventoryManager()) + val));
+//     Logger::Log()->info("localCSInventory: {:#x}", localCSInventory);
+
+//     return true;
+// }
+
+// bool ClientModule::init_IsItemCanOpenCrate(uint64_t addr)
+// {
+//     Logger::Log()->info("addr: {:#x}", addr);
+
+//     IsItemCanOpenCrate = (pIsItemCanOpenCrate) (addr);
+
+//     return true;
+// }

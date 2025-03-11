@@ -28,16 +28,28 @@ public:
     uint64_t GetCEconItemViewItemId(uintptr_t item);
     char *GetCEconItemViewValveDefName(uintptr_t CEconItemView_item);
 
-    //
-    // a3: 4
-    typedef bool(__fastcall *pIsItemCanOpenCrate)(uintptr_t CEconItemView_item, uintptr_t CEconItemView_crate, unsigned int a3);
-    pIsItemCanOpenCrate IsItemCanOpenCrate;
-
     typedef void(__fastcall *pDumpInventoryToConsole)(PVOID a1, bool bRoot);
     pDumpInventoryToConsole DumpInventoryToConsole;
 
-    bool init_localCSInventory();
+    struct PatternInfo
+    {
+        std::string pattern;
+        int offset;
+        std::function<bool(uint64_t)> func;
+    };
+
+    std::map<std::string, PatternInfo> pattern_map;
+
+    // bool init_GetCSInventoryManager(uint64_t addr);
+    // bool init_localCSInventory(uint64_t addr);
+    // bool init_IsItemCanOpenCrate(uint64_t addr);
+    
     uintptr_t localCSInventory;
+
+    
+    // a3: 4
+    typedef bool(__fastcall *pIsItemCanOpenCrate)(uintptr_t CEconItemView_item, uintptr_t CEconItemView_crate, unsigned int a3);
+    pIsItemCanOpenCrate IsItemCanOpenCrate;
 
     bool InitClient();
     bool Detach();

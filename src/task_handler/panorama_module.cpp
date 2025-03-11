@@ -25,7 +25,7 @@ void PanoramaModule::MyRunVtsScript(PVOID UiEnginePointer, PVOID contextPanel, c
 
 bool PanoramaModule::InitPanorama()
 {
-    hookInfoMap["RunScript"] = {(LPVOID) (base + 0xA7300), &PanoramaModule::MyRunVtsScript, reinterpret_cast<LPVOID *>(&oRunVtsScript)};
+    // hookInfoMap["RunScript"] = {(LPVOID) (base + 0xA7300), &PanoramaModule::MyRunVtsScript, reinterpret_cast<LPVOID *>(&oRunVtsScript)};
 
     return true;
 }
