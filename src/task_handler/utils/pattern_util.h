@@ -1,7 +1,11 @@
 ﻿#ifndef COMMON_UTIL_H
 #define COMMON_UTIL_H
 
+#pragma once
+
 #include "../../base/stdafx.h"
+
+#include <Windows.h>
 
 #include <Psapi.h>
 

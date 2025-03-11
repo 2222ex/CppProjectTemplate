@@ -54,6 +54,7 @@ target("task_handler")
 
     set_pcxxheader("src/base/stdafx.h")
     add_files("src/base/*.cpp")
+    add_files("src/task_handler/utils/*.cpp")
     add_files("src/task_handler/*.cpp")
 
     add_links("user32", "gdi32")

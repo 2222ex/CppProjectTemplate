@@ -4,8 +4,6 @@
 #include "../base/logger.h"
 #include "../base/stdafx.h"
 
-#include <Windows.h>
-
 #include <Psapi.h>
 
 class BaseModule

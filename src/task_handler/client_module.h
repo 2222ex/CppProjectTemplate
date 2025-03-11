@@ -36,8 +36,8 @@ public:
     typedef void(__fastcall *pDumpInventoryToConsole)(PVOID a1, bool bRoot);
     pDumpInventoryToConsole DumpInventoryToConsole;
 
-    typedef PVOID(__fastcall *pGetLocalCSInventory)(uintptr_t offset);
-    pGetLocalCSInventory GetLocalCSInventory;
+    bool init_localCSInventory();
+    uintptr_t localCSInventory;
 
     bool InitClient();
     bool Detach();

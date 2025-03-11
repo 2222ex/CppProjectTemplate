@@ -1,5 +1,8 @@
 ﻿#include "client_module.h"
 
+#include "utils/data_transform_util.h"
+#include "utils/pattern_util.h"
+
 #include "MinHook.h"
 
 ClientModule::ClientModule(/* args */)
@@ -22,8 +25,10 @@ void ClientModule::MyUseTool(uintptr_t a1, char *key, char *crate)
 
 PVOID ClientModule::MyGetLocalCSInventory()
 {
-    // search string: CCSGO_HudRosettaSelector and look down
-    return (PVOID) * reinterpret_cast<uintptr_t *>(reinterpret_cast<uintptr_t>(GetCSInventoryManager()) + 0x3D1A0);
+    Logger::Log()->trace("ClientModule::MyGetLocalCSInventory");
+
+    // return (PVOID) * reinterpret_cast<uintptr_t *>(reinterpret_cast<uintptr_t>(GetCSInventoryManager()) + 0x3D1A0);
+    return (PVOID) localCSInventory;
 }
 
 // in function: DumpInventoryToConsole
@@ -73,9 +78,34 @@ char *ClientModule::GetCEconItemViewValveDefName(uintptr_t CEconItemView_item)
     return *(char **) (temp + 496);
 }
 
+bool ClientModule::init_localCSInventory()
+{
+    Logger::Log()->info("ClientModule::init_localCSInventory");
+
+    // search string: CCSGO_HudRosettaSelector and look down
+    uintptr_t pattern_addr = search_pattern_in_module(miModule, hexstring2shorts("f2 0f 11 4c 24 ?? e8 ?? ?? ?? ?? 48 8b 88 ?? ?? ?? ??"));
+    if (pattern_addr == 0)
+    {
+        return false;
+    }
+
+    int offset = 14;
+    Logger::Log()->info("pattern_addr + offset: {:#x}", pattern_addr + offset);
+
+    uint32_t val = *reinterpret_cast<uint32_t *>(pattern_addr + offset);
+    Logger::Log()->info("val: {:#x}", val);
+
+    localCSInventory = *reinterpret_cast<uintptr_t *>((reinterpret_cast<uintptr_t>(GetCSInventoryManager()) + val));
+    Logger::Log()->info("localCSInventory: {:#x}", localCSInventory);
+
+    return true;
+}
+
 bool ClientModule::InitClient()
 {
     GetCSInventoryManager = reinterpret_cast<pCSInventoryManager>(base + 0x5189B0);
+
+    init_localCSInventory();
 
     // search string: "      %s (ID %llu) at backpack slot %d\n" or "(CLIENT) Inventory:\n"
     DumpInventoryToConsole = reinterpret_cast<pDumpInventoryToConsole>(base + 0x5197b0);
