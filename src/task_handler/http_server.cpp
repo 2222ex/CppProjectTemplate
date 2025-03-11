@@ -33,7 +33,7 @@ bool InitHttpServer()
         [](const httplib::Request &req, httplib::Response &res)
         {
             auto &client = ClientModuleSingleton::instance();
-            client.DumpInventoryToConsole(client.GetLocalCSInventory(), true);
+            client.DumpInventoryToConsole(client.MyGetLocalCSInventory(), true);
             res.set_content("call DumpInventoryToConsole", "text/plain"); // appliation/json
         });
 

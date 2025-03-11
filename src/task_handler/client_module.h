@@ -20,7 +20,7 @@ public:
     typedef PVOID (*pCSInventoryManager)();
     pCSInventoryManager GetCSInventoryManager;
 
-    PVOID GetLocalCSInventory();
+    PVOID MyGetLocalCSInventory();
     uintptr_t MyGetItemVectorItem(int i);
     int GetItemVectorCount();
     void GetItemVectorInfo();
@@ -35,6 +35,9 @@ public:
 
     typedef void(__fastcall *pDumpInventoryToConsole)(PVOID a1, bool bRoot);
     pDumpInventoryToConsole DumpInventoryToConsole;
+
+    typedef PVOID(__fastcall *pGetLocalCSInventory)(uintptr_t offset);
+    pGetLocalCSInventory GetLocalCSInventory;
 
     bool InitClient();
     bool Detach();

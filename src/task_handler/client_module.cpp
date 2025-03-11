@@ -1,4 +1,4 @@
-#include "client_module.h"
+﻿#include "client_module.h"
 
 #include "MinHook.h"
 
@@ -20,7 +20,7 @@ void ClientModule::MyUseTool(uintptr_t a1, char *key, char *crate)
     ClientModuleSingleton::instance().oUseTool(a1, key, crate);
 }
 
-PVOID ClientModule::GetLocalCSInventory()
+PVOID ClientModule::MyGetLocalCSInventory()
 {
     // search string: CCSGO_HudRosettaSelector and look down
     return (PVOID) * reinterpret_cast<uintptr_t *>(reinterpret_cast<uintptr_t>(GetCSInventoryManager()) + 0x3D1A0);
@@ -30,13 +30,13 @@ PVOID ClientModule::GetLocalCSInventory()
 uint64_t ClientModule::MyGetItemVectorItem(int i)
 {
     // [[[rcx+0x28] + rbp*8]]
-    return *(uintptr_t *) (*(uintptr_t *) ((uintptr_t) GetLocalCSInventory() + 40) + 8 * i);
+    return *(uintptr_t *) (*(uintptr_t *) ((uintptr_t) MyGetLocalCSInventory() + 40) + 8 * i);
 }
 
 // in function: DumpInventoryToConsole
 int ClientModule::GetItemVectorCount()
 {
-    return *((unsigned int *) ((uintptr_t) GetLocalCSInventory() + 0x20));
+    return *((unsigned int *) ((uintptr_t) MyGetLocalCSInventory() + 0x20));
 }
 
 void ClientModule::GetItemVectorInfo()
