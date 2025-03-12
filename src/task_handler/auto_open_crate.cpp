@@ -143,3 +143,46 @@ void AutoOpenCrate::OpenCrate(OpenCrateRequest openCrateRequest, OpenCrateResult
 
     return;
 }
+
+void AutoOpenCrate::DumpCrateInfo()
+{
+    GetInventory();
+
+    Logger::Log()->info("AutoOpenCrate::DumpCrateInfo");
+
+    auto &client = ClientModuleSingleton::instance();
+    std::vector<CrateItemInfo> list;
+
+    typedef char *(__fastcall * pGetItemNameUncustomize)(uintptr_t a1, const char *szItemId);
+    pGetItemNameUncustomize GetItemNameUncustomize = reinterpret_cast<pGetItemNameUncustomize>(ClientModuleSingleton::instance().base + 0xb042b0);
+
+    for (auto &item : inventory)
+    {
+        CrateItemInfo crateItemInfo = {};
+        crateItemInfo.valve_def_name = item.valve_def_name;
+
+        std::string strItemId = std::to_string(item.item_id);
+        const char *szItemId = strItemId.c_str();
+        crateItemInfo.name = GetItemNameUncustomize(0, szItemId);
+
+        for (auto &item2 : inventory)
+        {
+            if (client.IsItemCanOpenCrate(item2.CEconItemView_item, item.CEconItemView_item, 4))
+            {
+                crateItemInfo.correct_key_name = item2.valve_def_name;
+                crateItemInfo.is_need_tool = true;
+                break;
+            }
+        }
+
+        list.push_back(std::move(crateItemInfo));
+    }
+
+    nlohmann::json json = list;
+    std::ofstream of("dump_info.json");
+    if (!of.is_open())
+    {
+        return;
+    }
+    of.write(json.dump().c_str(), json.dump().size());
+}

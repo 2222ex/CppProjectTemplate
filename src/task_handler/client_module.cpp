@@ -139,7 +139,7 @@ bool ClientModule::InitClient()
         // search string: CCSGO_HudRosettaSelector and look down
         {"localCSInventory", {"f2 0f 11 4c 24 ?? e8 ?? ?? ?? ?? 48 8b 88 ?? ?? ?? ??", 14, f_init_localCSInventory}},
 
-        // search string: GetChosenActionItemsCount ,找到这个函数的返回值，跟踪这个返回值
+        // search string: GetChosenActionItemsCount ,找到这个函数的返回值，跟踪改变了这个返回值的函数
         {"IsItemCanOpenCrate", {"FF 50 ?? 48 8B E8 48 85 C0 0F 84 ?? ?? ?? ?? 65 48 8B 0C 25 ?? ?? ?? ??", -0x36, f_init_IsItemCanOpenCrate}},
 
         // search string: UseTool

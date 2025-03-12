@@ -40,6 +40,17 @@ public:
 
     void GetInventory();
     void OpenCrate(OpenCrateRequest openCrateRequest, OpenCrateResult &openCrateResult);
+
+    struct CrateItemInfo
+    {
+        std::string name;
+        std::string valve_def_name;
+        std::string correct_key_name;
+        bool is_need_tool;
+
+        NLOHMANN_DEFINE_TYPE_INTRUSIVE(CrateItemInfo, name, valve_def_name, correct_key_name, is_need_tool)
+    };
+    void DumpCrateInfo();
 };
 
 class AutoOpenCrateSingleton : public Singleton<AutoOpenCrate, true>

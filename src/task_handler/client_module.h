@@ -53,6 +53,9 @@ public:
     typedef uintptr_t(__fastcall *pGetNamePointer)(uintptr_t item);
     pGetNamePointer GetNamePointer;
 
+    typedef char *(__fastcall *pGetItemNameUncustomized)(uintptr_t a1, char *itemId);
+    pGetItemNameUncustomized GetItemNameUncustomized;
+
     bool InitClient();
     bool Detach();
 

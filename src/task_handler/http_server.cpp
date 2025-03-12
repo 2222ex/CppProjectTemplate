@@ -122,6 +122,15 @@ bool InitHttpServer()
             res.set_content(json.dump(), "application/json");
         });
 
+    svr.Get(
+        "/DumpCrateInfo",
+        [&](const httplib::Request &req, httplib::Response &res)
+        {
+            auto &aoc = AutoOpenCrateSingleton::instance();
+            aoc.DumpCrateInfo();
+            res.set_content("success", "text/plain");
+        });
+
     // svr.Post(
     //     "/f2",
     //     [](const httplib::Request &req, httplib::Response &res)
