@@ -1,8 +1,8 @@
 ﻿#ifndef MAIN_WINDOW_H
 #define MAIN_WINDOW_H
 
-#include "../base/singleton.h"
-#include "../base/stdafx.h"
+#include "singleton.h"
+#include "stdafx.h"
 
 #include <d3d11.h>
 #include <imgui.h>
@@ -14,7 +14,6 @@
 class MainWindow
 {
 private:
-    /* data */
 
 public:
     HWND hwnd = nullptr;
@@ -22,9 +21,6 @@ public:
     ID3D11DeviceContext *g_pd3dDeviceContext = nullptr;
     IDXGISwapChain *g_pSwapChain = nullptr;
     ID3D11RenderTargetView *g_mainRenderTargetView = nullptr;
-
-    std::string tip_text;
-    DWORD target_PID;
 
     bool Init();
     bool InitD3D(HWND hWnd);

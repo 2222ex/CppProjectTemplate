@@ -27,6 +27,8 @@ elseif is_plat("linux") then
     set_arch("x86_64")
 end
 
+add_includedirs("src/base")
+
 target("task_manager")
     set_default(true)
 
@@ -45,6 +47,7 @@ target("task_manager")
     set_pcxxheader("src/base/stdafx.h")
     add_files("src/base/*.cpp")
     add_files("src/task_manager/*.cpp")
+    add_files("src/task_manager/window/*.cpp")
 
 target("task_handler")
     set_default(true)
@@ -56,5 +59,7 @@ target("task_handler")
     add_files("src/base/*.cpp")
     add_files("src/task_handler/utils/*.cpp")
     add_files("src/task_handler/*.cpp")
+    
 
     add_links("user32", "gdi32")
+

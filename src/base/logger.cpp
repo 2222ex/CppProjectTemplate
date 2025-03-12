@@ -2,8 +2,8 @@
 
 Logger::Logger()
 {
-    auto max_size = 1048576 * 10; // 2mb
-    auto max_files = 1;
+    auto max_size = 1048576 * 10;
+    auto max_files = 200;
     rootLogger = spdlog::rotating_logger_mt("Topo", "task_handler.txt", max_size, max_files);
     rootLogger->set_level(spdlog::level::trace);
     rootLogger->set_pattern("[%H:%M:%S %z][%l]: %v"); // (%@)
@@ -26,8 +26,8 @@ std::shared_ptr<spdlog::logger> Logger::getThreadLogger(std::string thread_name)
     if (loggers.count(thread_name))
         return loggers[thread_name];
 
-    auto max_size = 1048576 * 10; // 50mb
-    auto max_files = 2;
+    auto max_size = 1048576 * 10;
+    auto max_files = 200;
     auto logger = spdlog::rotating_logger_mt(thread_name, "log/" + thread_name + ".txt", max_size, max_files);
     logger->set_pattern("[%H:%M:%S %z][" + thread_name + "][%l]: %v"); // (%@)
     logger->flush_on(spdlog::level::trace);

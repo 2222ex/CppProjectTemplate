@@ -1,13 +1,13 @@
-﻿#include <httplib.h>
+﻿
 
-#include "injector.h"
 #include "main_window.h"
+#include "prod_window.h"
+#include "test_window.h"
 
 extern IMGUI_IMPL_API LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam); // Use ImGui::GetCurrentContext()
 
 MainWindow::MainWindow(/* args */)
 {
-    tip_text = "Waiting";
 }
 
 LRESULT CALLBACK WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
@@ -96,8 +96,6 @@ bool MainWindow::Init()
 
     ImVec4 clear_color = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
 
-    auto &injector = InjectorSingleton::instance();
-
     while (msg.message != WM_QUIT)
     {
         if (PeekMessage(&msg, nullptr, 0U, 0U, PM_REMOVE))
@@ -112,101 +110,8 @@ bool MainWindow::Init()
         ImGui_ImplWin32_NewFrame();
         ImGui::NewFrame();
 
-        ImGui::Begin("Simple UI", nullptr, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_AlwaysAutoResize);
-        ImGui::Text("Hello, DirectX 11 + ImGui!");
-        ImGui::Text(tip_text.c_str());
-
-        static char buffer[256] = {0};
-
-        ImGui::InputText("Process PID", buffer, sizeof(buffer));
-        std::string str_buffer = buffer;
-        if (!str_buffer.empty())
-        {
-            target_PID = std::stoul(str_buffer);
-            // std::cout << "target_PID: " << target_PID << std::endl;
-        }
-
-        static char buf2[256] = {0};
-        if (ImGui::InputText("Process Name", buf2, sizeof(buffer)))
-        {
-        }
-        std::string str_buf2 = buf2;
-
-        auto dll_path = std::filesystem::current_path() / "task_handler.dll";
-
-        if (ImGui::Button("APC Inject"))
-        {
-            if (!str_buf2.empty())
-            {
-                target_PID = injector.FindProcessId(buf2);
-            }
-            injector.InjectQueueUserAPC(dll_path.wstring().c_str(), target_PID, tip_text);
-        }
-
-        ImGui::SameLine();
-
-        if (ImGui::Button("CreateRemoteThread Inject"))
-        {
-            if (!str_buf2.empty())
-            {
-                target_PID = injector.FindProcessId(buf2);
-            }
-            injector.InjectUseCreateRemoteThread(dll_path.string().c_str(), target_PID, tip_text);
-        }
-
-        static std::string http_tip = "Waiting for call http";
-        ImGui::Text(http_tip.c_str());
-
-        static httplib::Client cli("localhost", 24960);
-
-        if (ImGui::Button("f1"))
-        {
-            if (auto res = cli.Get("/f1"))
-            {
-                http_tip = res->body;
-            }
-        }
-
-        ImGui::SameLine();
-
-        if (ImGui::Button("Detach"))
-        {
-            if (auto res = cli.Get("/Detach"))
-            {
-                http_tip = res->body;
-                if (!str_buf2.empty())
-                {
-                    target_PID = injector.FindProcessId(buf2);
-                }
-            }
-            injector.UnLoadLibrary(dll_path.string().c_str(), target_PID, tip_text);
-        }
-
-        if (ImGui::Button("DumpInventoryToConsole"))
-        {
-            if (auto res = cli.Get("/DumpInventoryToConsole"))
-            {
-                http_tip = res->body;
-            }
-        }
-
-        if (ImGui::Button("GetInventoryCount"))
-        {
-            if (auto res = cli.Get("/GetInventoryCount"))
-            {
-                http_tip = res->body;
-            }
-        }
-
-        if (ImGui::Button("MyGetItemVectorInfo"))
-        {
-            if (auto res = cli.Get("/MyGetItemVectorInfo"))
-            {
-                http_tip = res->body;
-            }
-        }
-
-        ImGui::End();
+        TestWindowSingleton::instance().render_window();
+        ProdWindowSingleton::instance().render_window();
 
         ImGui::Render();
         g_pd3dDeviceContext->OMSetRenderTargets(1, &g_mainRenderTargetView, nullptr);
