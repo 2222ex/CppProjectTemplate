@@ -4,6 +4,7 @@
 
 #include "../injector.h"
 #include "../launcher.h"
+#include "../steam_login.h"
 
 TestWindow::TestWindow()
 {
@@ -128,6 +129,27 @@ void TestWindow::render_window()
                         launcher.terminate_application(launcher.AppInfo_cs2);
                     })
             .detach();
+    }
+
+    if (ImGui::Button("Launch Steam"))
+    {
+        std::thread(
+            []()
+            {
+                auto &instance = SteamLoginSingleton::instance();
+                SteamLogin::LoginInfo login_info = {
+                    "111",
+                    "123",
+                    "111111"};
+                instance.login(login_info);
+            })
+            .detach();
+    }
+
+    if (ImGui::Button("Terminate Steam"))
+    {
+        auto &launcher = LauncherSingleton::instance();
+        launcher.terminate_application(launcher.AppInfo_steam);
     }
 
     ImGui::End();

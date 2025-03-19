@@ -1,5 +1,8 @@
 #include "launcher.h"
 
+#include <Psapi.h>
+#include <Windows.h>
+
 Launcher::Launcher()
 {
     log = Logger::Log();
@@ -33,6 +36,47 @@ bool Launcher::launch_application(AppInfo &appInfo)
     if (appInfo.is_launch)
     {
         return false;
+    }
+
+    DWORD aProcesses[1024], cbNeeded;
+    if (!EnumProcesses(aProcesses, sizeof(aProcesses), &cbNeeded))
+    {
+        err_msg = "EnumProcesses failed";
+        return false;
+    }
+    unsigned int cProcesses = cbNeeded / sizeof(DWORD);
+    for (unsigned int i = 0; i < cProcesses; ++i)
+    {
+        DWORD curr_pid = aProcesses[i];
+        if (curr_pid == 0)
+            continue;
+        HANDLE hProcess = OpenProcess(PROCESS_QUERY_INFORMATION | PROCESS_VM_READ, FALSE, curr_pid);
+        if (hProcess == NULL)
+            continue;
+
+        HMODULE hMod;
+        DWORD cbNeeded;
+        char buff[255];
+        if (EnumProcessModules(hProcess, &hMod, sizeof(hMod), &cbNeeded))
+        {
+            GetModuleBaseNameA(hProcess, hMod, (LPSTR) &buff, DWORD(sizeof(buff) / sizeof(char)));
+        }
+
+        if (std::string(buff) == "steamwebhelper.exe")
+        {
+            if (TerminateProcess(hProcess, 0) != 0)
+            {
+                err_msg = "steamwebhelper.exe already running but failed to terminate";
+                return false;
+            }
+
+            CloseHandle(hProcess);
+            break;
+        }
+        if (i == cProcesses - 1)
+        {
+        }
+        CloseHandle(hProcess);
     }
 
     std::string commandLine;

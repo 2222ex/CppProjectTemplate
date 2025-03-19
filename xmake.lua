@@ -6,6 +6,15 @@ if is_plat("windows") then
     add_rules("plugin.vsxmake.autoupdate")
 end
 
+add_requires("boost", {
+    configs = {
+        asio=true,
+        random=true
+    }
+})
+
+add_packages("boost")
+
 local packages = {
     "nlohmann_json v3.11.3",
     "spdlog v1.14.1",
@@ -17,6 +26,8 @@ for _, package in ipairs(packages) do
     add_requires(package)
     add_packages(package:match("^[^ ]+"))
 end
+
+
 
 set_languages("c++23")
 -- set_arch("x86")

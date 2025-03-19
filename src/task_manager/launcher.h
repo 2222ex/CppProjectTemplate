@@ -19,8 +19,9 @@ public:
     const std::string kGameLauncherPath = "C:\\Program Files (x86)\\Steam\\steamapps\\common\\Counter-Strike Global Offensive\\game\\bin\\win64\\cs2.exe";
     const std::string kGameLaunchParam = "-steam -worldwide -insecure";
 
-    const std::string kSteamLauncherPath = "C:\\Program Files (x86)\\Steam\\steam.exe";
-    const std::string kSteamLauncherParam = "";
+    // const std::string kSteamLauncherPath = "C:\\Program Files (x86)\\Steam\\steam.exe";
+    const std::string kSteamLauncherPath = "D:\\Steam\\steam.exe";
+    const std::string kSteamLauncherParam = "-login -cef-enable-debugging";
 
     struct AppInfo
     {

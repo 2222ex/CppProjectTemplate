@@ -8,24 +8,24 @@ AutoOpenCrate::AutoOpenCrate(/* args */)
 
 void AutoOpenCrate::GetInventory()
 {
-    Logger::Log()->info("AutoOpenCrate::GetInventory");
+    // Logger::Log()->trace("AutoOpenCrate::GetInventory");
 
     inventory.clear();
 
     auto &client = ClientModuleSingleton::instance();
     auto inventory_count = client.GetItemVectorCount();
 
-    Logger::Log()->info("inventory_count: {}", inventory_count);
+    // Logger::Log()->trace("inventory_count: {}", inventory_count);
 
     for (size_t i = 0; i < inventory_count; i++)
     {
         Item item = {};
 
         item.CEconItemView_item = client.MyGetItemVectorItem(i);
-        Logger::Log()->info("CEconItemView_item: {:#x}", item.CEconItemView_item);
+        // Logger::Log()->trace("CEconItemView_item: {:#x}", item.CEconItemView_item);
 
         item.item_id = client.GetCEconItemViewItemId(item.CEconItemView_item);
-        Logger::Log()->info("item_id: {}", item.item_id);
+        // Logger::Log()->trace("item_id: {}", item.item_id);
 
         if (item.item_id == 17293822569102708641ULL || item.item_id == 17293822569110896676)
         {
@@ -33,7 +33,7 @@ void AutoOpenCrate::GetInventory()
         }
 
         item.valve_def_name = client.GetCEconItemViewValveDefName(item.CEconItemView_item);
-        Logger::Log()->info("valve_def_name: {}", item.valve_def_name);
+        // Logger::Log()->trace("valve_def_name: {}", item.valve_def_name);
 
         inventory.push_back(std::move(item));
     }
@@ -136,6 +136,28 @@ void AutoOpenCrate::OpenCrate(OpenCrateRequest openCrateRequest, OpenCrateResult
         Logger::Log()->info("szKeyId: {}, szCrateId: {}", szKeyId, szCrateId);
         client.MyUseTool((uintptr_t) client.useToolUnkParam1, (char *) szKeyId, (char *) szCrateId);
         std::this_thread::sleep_for(std::chrono::seconds(6));
+
+        GetInventory();
+
+        bool succ = true;
+        uint64_t reward_itemId = 0;
+        for (size_t i = 0; i < inventory.size(); i++)
+        {
+            if (inventory[i].item_id == key_ids[i])
+            {
+                succ = false;
+                break;
+            }
+
+            reward_itemId = reward_itemId < inventory[i].item_id ? inventory[i].item_id : reward_itemId;
+        }
+
+        if (succ == false)
+        {
+            Logger::Log()->info("open crate {} failed", key_ids[i]);
+            continue;
+        }
+        Logger::Log()->info("open crate success, reward itemId: {}", reward_itemId);
     }
 
     openCrateResult.msg = fmt::format("success");
