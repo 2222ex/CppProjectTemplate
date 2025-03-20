@@ -59,6 +59,7 @@ target("task_manager")
     add_files("src/base/*.cpp")
     add_files("src/task_manager/*.cpp")
     add_files("src/task_manager/window/*.cpp")
+    add_files("src/task_manager/utils/*.cpp")
 
 target("task_handler")
     set_default(true)

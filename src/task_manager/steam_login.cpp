@@ -14,25 +14,36 @@ SteamLogin::~SteamLogin()
 {
 }
 
-bool SteamLogin::before_login()
+bool SteamLogin::before_login(std::string &err_msg)
 {
     if (is_before_login_succ)
     {
+        std::this_thread::sleep_for(std::chrono::milliseconds(100));
         return true;
     }
 
-    Launcher launcher = LauncherSingleton::instance();
+    Launcher &launcher = LauncherSingleton::instance();
 
-    std::thread thread(
-        [&launcher]()
-        {
-            launcher.launch_application(launcher.AppInfo_steam);
-        });
-    thread.detach();
-
-    while (launcher.AppInfo_steam.is_launch == false)
+    if (launcher.AppInfo_steam.is_launch == false)
     {
-        std::this_thread::sleep_for(std::chrono::milliseconds(10));
+        std::thread thread(
+            [&launcher]()
+            {
+                launcher.launch_application(launcher.AppInfo_steam);
+            });
+        thread.detach();
+
+        int count = 1000;
+        while (launcher.AppInfo_steam.is_launch == false && count > 0)
+        {
+            std::this_thread::sleep_for(std::chrono::milliseconds(10));
+            count--;
+        }
+        if (count == 0 && launcher.AppInfo_steam.is_launch == false)
+        {
+            err_msg = "尝试启动steam失败";
+            return false;
+        }
     }
 
     nlohmann::json webSocketDebuggerUrl;
@@ -56,34 +67,39 @@ bool SteamLogin::before_login()
         err_msg = fmt::format("Request webSocketDebuggerUrl unknow error");
         return false;
     }
-
-    while (true)
+    if (webSocketDebuggerUrl.empty() || webSocketDebuggerUrl.dump() == "null")
     {
-        SteamWebManager stwm(webSocketDebuggerUrl.dump());
-        HWND hSteam = FindWindowW(L"SDL_app", L"登录 Steam");
-        if (hSteam == NULL)
-        {
-            err_msg = "Steam window not found";
-            continue;
-        }
-        ShowWindow(hSteam, 5);
-        SetForegroundWindow(hSteam);
-
-        std::string str = stwm.getElementInnerHTML(stwm.kAccountUserInputTipPath);
-        Logger::Log()->info("str: {}", str);
-        if (str == "用帐户名称登录")
-        {
-            is_before_login_succ = true;
-            break;
-        }
-        std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+        err_msg = "webSocketDebuggerUrl empty";
+        return false;
     }
 
-    return true;
+    SteamWebManager stwm(webSocketDebuggerUrl.dump());
+    HWND hSteam = FindWindowW(L"SDL_app", L"登录 Steam");
+    if (hSteam == NULL)
+    {
+        err_msg = "Steam window not found";
+        return false;
+    }
+    // ShowWindow(hSteam, 5);
+    // SetForegroundWindow(hSteam);
+
+    std::string str = stwm.getElementInnerHTML(stwm.kAccountUserInputTipPath);
+    // std::string str = stwm.getElement(stwm.kAccountUserInputTipPath, "");
+    Logger::Log()->info("str: {}", str);
+    if (str == "用帐户名称登录")
+    {
+        Logger::Log()->info("steam ready to login");
+        is_before_login_succ = true;
+        return true;
+    }
+    std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+
+    err_msg = "未找到登录标志";
+    return false;
 }
 
 // 调用该方法前确保steam已经更新完毕及其他操作，处于等待输入账号密码的界面
-bool SteamLogin::login(LoginInfo login_info)
+bool SteamLogin::login(LoginInfo login_info, std::string &err_msg)
 {
     if (is_before_login_succ == false)
     {
@@ -129,49 +145,89 @@ bool SteamLogin::login(LoginInfo login_info)
 
         stwm.focusOnElement(stwm.kAccountUserInputPath);
 
-        auto SimulateKeyPress = [](WORD keyCode)
+        auto SimulateKeyPress = [](WORD keyCode, bool shift = false)
         {
-            INPUT inputs[2] = {0};
+            INPUT inputs[6] = {0};
+            int count = 0;
+
+            if (shift)
+            {
+                inputs[count].type = INPUT_KEYBOARD;
+                inputs[count].ki.wVk = VK_SHIFT;
+                count++;
+            }
 
             // keydown
-            inputs[0].type = INPUT_KEYBOARD;
-            inputs[0].ki.wVk = keyCode;
+            inputs[count].type = INPUT_KEYBOARD;
+            inputs[count].ki.wVk = keyCode;
+            count++;
 
-            // inputs[1].type = INPUT_KEYBOARD;
-            // inputs[1].ki.wVk = keyCode;
-            // inputs[1].ki.dwFlags = KEYEVENTF_KEYUP;
+            if (shift)
+            {
+                inputs[count].type = INPUT_KEYBOARD;
+                inputs[count].ki.wVk = VK_SHIFT;
+                inputs[count].ki.dwFlags = KEYEVENTF_KEYUP;
+                count++;
+            }
 
-            SendInput(1, inputs, sizeof(INPUT));
+            SendInput(count, inputs, sizeof(INPUT));
         };
-        short vk;
-        for (size_t i = 0; i < login_info.user.size(); i++)
+
+        auto SimulateStringInput = [SimulateKeyPress](std::string str)
         {
-            std::this_thread::sleep_for(std::chrono::milliseconds(10));
-            // Logger::Log()->info("input char: {}", login_info.user.at(i));
-            vk = VkKeyScan(login_info.user.at(i));
-            SimulateKeyPress(static_cast<WORD>(vk));
-        }
+            for (size_t i = 0; i < str.size(); i++)
+            {
+                short vk;
+                bool isShift = false;
+                unsigned char ch = static_cast<unsigned char>(str.at(i));
+                std::this_thread::sleep_for(std::chrono::milliseconds(10));
+
+                if (std::isupper(ch) && std::isdigit(ch) == false)
+                {
+                    isShift = true;
+                }
+                else
+                {
+                    isShift = false;
+                }
+
+                vk = VkKeyScan(ch);
+                Logger::Log()->info("input char: {},isShift: {},std::isupper: {}", str.at(i), isShift, std::isupper(ch), std::isdigit(ch));
+                SimulateKeyPress(static_cast<WORD>(vk), isShift);
+            }
+        };
+
+        SimulateStringInput(login_info.user);
 
         SimulateKeyPress(VK_TAB);
 
-        for (size_t i = 0; i < login_info.password.size(); i++)
-        {
-            std::this_thread::sleep_for(std::chrono::milliseconds(10));
-            // Logger::Log()->info("input char: {}", login_info.password.at(i));
-            vk = VkKeyScan(login_info.password.at(i));
-            SimulateKeyPress(static_cast<WORD>(vk));
-        }
+        SimulateStringInput(login_info.password);
 
-        SimulateKeyPress(VK_RETURN);
+        std::this_thread::sleep_for(std::chrono::milliseconds(100));
+
+        // SimulateKeyPress(VK_RETURN);
+        stwm.clickElement(stwm.kLoginButtonPath);
+
+        std::this_thread::sleep_for(std::chrono::seconds(2));
+
+        std::string login_tip = stwm.getElementInnerHTML(stwm.kLoginTipPath);
+        if (login_tip == "请核对您的密码和帐户名称并重试。")
+        {
+            err_msg = "账号或密码错误";
+            return false;
+        }
 
         stwm.clickElement(stwm.kTokenInputPath);
 
-        for (size_t i = 0; i < login_info.token.size(); i++)
+        SimulateStringInput(login_info.token);
+
+        std::this_thread::sleep_for(std::chrono::seconds(2));
+
+        std::string tokenTip = stwm.getElementInnerHTML(stwm.kTokenTipPath);
+        if (tokenTip == "代码错误，请重试")
         {
-            std::this_thread::sleep_for(std::chrono::milliseconds(10));
-            // Logger::Log()->info("input char: {}", login_info.token.at(i));
-            vk = VkKeyScan(login_info.token.at(i));
-            SimulateKeyPress(static_cast<WORD>(vk));
+            err_msg = "令牌错误";
+            return false;
         }
 
         return true;

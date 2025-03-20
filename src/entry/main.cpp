@@ -14,7 +14,15 @@ int main(int argc, char *argv[])
         {
             while (true)
             {
-                SteamLoginSingleton::instance().before_login();
+                std::string err_msg;
+                if (SteamLoginSingleton::instance().before_login(err_msg))
+                {
+                    // Logger::Log()->info("before_login succ");
+                }
+                else
+                {
+                    Logger::Log()->error("before_login failed, err_msg: {}", err_msg);
+                }
             }
         })
         .detach();

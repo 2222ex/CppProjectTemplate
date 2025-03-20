@@ -5,6 +5,8 @@
 #include "../base/singleton.h"
 #include "../base/stdafx.h"
 
+#include <mutex>
+
 class Launcher
 {
 private:
@@ -25,13 +27,16 @@ public:
 
     struct AppInfo
     {
+        std::mutex mtx;
+
         std::string name;
         std::string path;
         std::string launch_param;
 
-        PROCESS_INFORMATION game_pi;
+        PROCESS_INFORMATION pi;
+
         DWORD exit_code;
-        bool is_launch;
+        std::atomic<bool> is_launch;
 
         std::function<void()> success_call_back;
     }; // AppInfo_steam, AppInfo_cs2
@@ -40,7 +45,7 @@ public:
     AppInfo AppInfo_cs2;
 
     bool launch_application(AppInfo &appInfo);
-    bool terminate_application(AppInfo &appInfo);
+    bool terminate_application(AppInfo &appInfo, std::string &err_msg);
 };
 
 class LauncherSingleton : public Singleton<Launcher, true>

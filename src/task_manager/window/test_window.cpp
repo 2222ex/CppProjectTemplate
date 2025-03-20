@@ -126,7 +126,11 @@ void TestWindow::render_window()
         std::thread([]()
                     {
                         auto &launcher = LauncherSingleton::instance();
-                        launcher.terminate_application(launcher.AppInfo_cs2);
+                        std::string err_msg;
+                        if (launcher.terminate_application(launcher.AppInfo_cs2, err_msg) == false)
+                        {
+                            Logger::Log()->error("terminate application failed: {}", err_msg);
+                        }
                     })
             .detach();
     }
@@ -137,11 +141,12 @@ void TestWindow::render_window()
             []()
             {
                 auto &instance = SteamLoginSingleton::instance();
+                std::string err_msg;
                 SteamLogin::LoginInfo login_info = {
                     "111",
                     "123",
                     "111111"};
-                instance.login(login_info);
+                instance.login(login_info, err_msg);
             })
             .detach();
     }
@@ -149,7 +154,11 @@ void TestWindow::render_window()
     if (ImGui::Button("Terminate Steam"))
     {
         auto &launcher = LauncherSingleton::instance();
-        launcher.terminate_application(launcher.AppInfo_steam);
+        std::string err_msg;
+        if (launcher.terminate_application(launcher.AppInfo_steam, err_msg) == false)
+        {
+            Logger::Log()->error("terminate application failed: {}", err_msg);
+        }
     }
 
     ImGui::End();

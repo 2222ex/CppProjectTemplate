@@ -26,10 +26,11 @@ bool InitHttpServer()
             nlohmann::json parsed = nlohmann::json::parse(req.body);
             SteamLogin::LoginInfo login_info = parsed.get<SteamLogin::LoginInfo>();
 
-            auto login_result = sl.login(login_info);
+            std::string err_msg;
+            auto login_result = sl.login(login_info, err_msg);
             nlohmann::json ret_json = {
                 {"success", login_result},
-                {"err_msg", sl.err_msg}};
+                {"err_msg", err_msg}};
             res.set_content(ret_json.dump(), "appliation/json");
         });
     bool res = svr.listen("localhost", 24961);

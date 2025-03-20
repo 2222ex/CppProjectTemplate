@@ -17,7 +17,6 @@ private:
     /* data */
 
 public:
-    std::string err_msg;
     SteamLogin(/* args */);
     ~SteamLogin();
 
@@ -30,8 +29,8 @@ public:
 
     NLOHMANN_DEFINE_TYPE_INTRUSIVE(LoginInfo, user, password, token)
 
-    bool before_login();
-    bool login(LoginInfo login_info);
+    bool before_login(std::string &err_msg);
+    bool login(LoginInfo login_info, std::string &err_msg);
     bool log_out();
 
     std::atomic<bool> is_before_login_succ;
@@ -146,6 +145,7 @@ public:
     const std::string kAccountUserInputTipPath = "/html/body/div/div[2]/div[2]/div/div[2]/form/div[1]/div[1]";
     const std::string kAccountPasswordInputPath = "/html/body/div/div[2]/div[2]/div/div[2]/form/div[2]/input";
     const std::string kTokenInputPath = "/html/body/div/div[2]/div[2]/div/div[2]/div/div[3]/div[1]/div";
+    const std::string kLoginButtonPath = "/html/body/div/div[2]/div[2]/div/div[2]/form/div[4]/button";
     const std::string kLoginTipPath = "/html/body/div/div[2]/div[2]/div/div[2]/form/div[5]";
     const std::string kTokenTipPath = "/html/body/div/div[2]/div[2]/div/div[2]/form/div/div[2]/div[1]/div[1]";
     const std::string kNetWorkTipPath = "/html/body/div/div[2]/div[2]/div/div/div/div[1]";
@@ -196,15 +196,28 @@ public:
     {
         // 构造 DevTools 协议命令
         std::string expression = fmt::format(
-            "document.evaluate(\"{}\", document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null).singleNodeValue{}",
+            "document.evaluate('{}', document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null).singleNodeValue{}",
             xpath,
             action);
 
         json command = {
             {"id", 1},
             {"method", "Runtime.evaluate"},
-            {"params", {{"expression", expression}}}};
+            {"params", {
+                           {"expression", expression},
+                           //    {"returnByValue", true},
+
+                       }}
+
+        };
+        Logger::Log()->trace("build_command: {}", command.dump());
         return command;
+    }
+
+    std::string getElement(const std::string xpath, const std::string action)
+    {
+        std::string response = ws_client->sendAndReceive(build_command(xpath, action).dump());
+        return response;
     }
 
     std::string getElementInnerHTML(const std::string xpath)

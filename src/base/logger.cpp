@@ -9,7 +9,7 @@ Logger::Logger()
 
     rootLogger = std::make_shared<spdlog::logger>("ex", spdlog::sinks_init_list {file_sink, console_sink});
     rootLogger->set_level(spdlog::level::trace);
-    rootLogger->set_pattern("[%H:%M:%S %z][%l]: %v"); // (%@)
+    rootLogger->set_pattern("[%H:%M:%S %z][%t][%^%l%$]: %v"); // (%@)
     rootLogger->flush_on(spdlog::level::trace);
 }
 
