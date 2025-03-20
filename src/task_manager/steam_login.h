@@ -31,7 +31,7 @@ public:
 
     bool before_login(std::string &err_msg);
     bool login(LoginInfo login_info, std::string &err_msg);
-    bool log_out();
+    bool log_out(std::string &err_msg);
 
     std::atomic<bool> is_before_login_succ;
     std::atomic<bool> is_need_before_login;

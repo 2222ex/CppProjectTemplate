@@ -33,6 +33,20 @@ bool InitHttpServer()
                 {"err_msg", err_msg}};
             res.set_content(ret_json.dump(), "appliation/json");
         });
+
+    svr.Post(
+        "/steam_log_out",
+        [](const httplib::Request &req, httplib::Response &res)
+        {
+            auto &sl = SteamLoginSingleton::instance();
+            std::string err_msg;
+            auto log_out_result = sl.log_out(err_msg);
+
+            nlohmann::json ret_json = {
+                {"success", log_out_result},
+                {"err_msg", err_msg}};
+            res.set_content(ret_json.dump(), "appliation/json");
+        });
     bool res = svr.listen("localhost", 24961);
     Logger::Log()->info("svr.listen return value: {}", res);
     return res;

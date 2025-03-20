@@ -248,8 +248,11 @@ bool SteamLogin::login(LoginInfo login_info, std::string &err_msg)
     return false;
 }
 
-bool SteamLogin::log_out()
+bool SteamLogin::log_out(std::string &err_msg)
 {
+    auto &launcher = LauncherSingleton::instance();
+    
+    launcher.terminate_application(launcher.AppInfo_steam, err_msg);
     is_before_login_succ = false;
     is_need_before_login = true;
     return true;
