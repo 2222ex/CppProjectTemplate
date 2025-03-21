@@ -6,9 +6,9 @@ AutoOpenCrate::AutoOpenCrate(/* args */)
 {
 }
 
-void AutoOpenCrate::GetInventory()
+void AutoOpenCrate::UpdateInventory()
 {
-    // Logger::Log()->trace("AutoOpenCrate::GetInventory");
+    // Logger::Log()->trace("AutoOpenCrate::UpdateInventory");
 
     inventory.clear();
 
@@ -42,7 +42,7 @@ void AutoOpenCrate::GetInventory()
 // 一次开一种箱子
 void AutoOpenCrate::OpenCrate(OpenCrateRequest openCrateRequest, OpenCrateResult &openCrateResult)
 {
-    GetInventory();
+    UpdateInventory();
 
     Logger::Log()->info("AutoOpenCrate::OpenCrate");
 
@@ -135,15 +135,15 @@ void AutoOpenCrate::OpenCrate(OpenCrateRequest openCrateRequest, OpenCrateResult
         Logger::Log()->info("key_ids[i]: {}, crate_ids[i]: {}", key_ids[i], crate_ids[i]);
         Logger::Log()->info("szKeyId: {}, szCrateId: {}", szKeyId, szCrateId);
         client.MyUseTool((uintptr_t) client.useToolUnkParam1, (char *) szKeyId, (char *) szCrateId);
-        std::this_thread::sleep_for(std::chrono::seconds(6));
+        std::this_thread::sleep_for(std::chrono::milliseconds(2000)); // open crate min interval time
 
-        GetInventory();
+        UpdateInventory();
 
         bool succ = true;
         uint64_t reward_itemId = 0;
         for (size_t i = 0; i < inventory.size(); i++)
         {
-            if (inventory[i].item_id == key_ids[i])
+            if (inventory[i].item_id == crate_ids[i])
             {
                 succ = false;
                 break;
@@ -154,10 +154,11 @@ void AutoOpenCrate::OpenCrate(OpenCrateRequest openCrateRequest, OpenCrateResult
 
         if (succ == false)
         {
-            Logger::Log()->info("open crate {} failed", key_ids[i]);
+            Logger::Log()->info("open crate {} failed", crate_ids[i]);
             continue;
         }
         Logger::Log()->info("open crate success, reward itemId: {}", reward_itemId);
+        openCrateResult.reward_item_ids.push_back(reward_itemId);
     }
 
     openCrateResult.msg = fmt::format("success");
@@ -166,9 +167,50 @@ void AutoOpenCrate::OpenCrate(OpenCrateRequest openCrateRequest, OpenCrateResult
     return;
 }
 
+std::vector<ItemDetail> AutoOpenCrate::GetInventoryItemDetail()
+{
+    UpdateInventory();
+    std::vector<ItemDetail> list;
+
+    auto &client = ClientModuleSingleton::instance();
+
+    for (auto &item : inventory)
+    {
+        ItemDetail itemDetail = {};
+        itemDetail.valve_def_name = item.valve_def_name;
+
+        if (item.item_id == 17293822569102708641ULL || item.item_id == 17293822569110896676)
+        {
+            continue;
+        }
+
+        std::string strItemId = std::to_string(item.item_id);
+        const char *szItemId = strItemId.c_str();
+
+        // itemDetail.name = "";
+
+        for (auto &item2 : inventory)
+        {
+            if (client.IsItemCanOpenCrate(item2.CEconItemView_item, item.CEconItemView_item, 4))
+            {
+                itemDetail.correct_key_name = item2.valve_def_name;
+                itemDetail.is_found_correct_key = true;
+                break;
+            }
+        }
+
+        list.push_back(std::move(itemDetail));
+    }
+    return list;
+}
+
+void AutoOpenCrate::OpenSingleCrate(OpenSingleCrateRequest openSingleCrateRequest, OpenCrateResult &openSingleCrateResult)
+{
+}
+
 void AutoOpenCrate::DumpCrateInfo()
 {
-    GetInventory();
+    UpdateInventory();
 
     Logger::Log()->info("AutoOpenCrate::DumpCrateInfo");
 
@@ -183,8 +225,14 @@ void AutoOpenCrate::DumpCrateInfo()
         CrateItemInfo crateItemInfo = {};
         crateItemInfo.valve_def_name = item.valve_def_name;
 
+        if (item.item_id == 17293822569102708641ULL || item.item_id == 17293822569110896676)
+        {
+            continue;
+        }
+
         std::string strItemId = std::to_string(item.item_id);
         const char *szItemId = strItemId.c_str();
+
         crateItemInfo.name = GetItemNameUncustomize(0, szItemId);
 
         for (auto &item2 : inventory)

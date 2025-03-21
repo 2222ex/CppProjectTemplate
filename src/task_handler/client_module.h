@@ -56,7 +56,7 @@ public:
     typedef char *(__fastcall *pGetItemNameUncustomized)(uintptr_t a1, char *itemId);
     pGetItemNameUncustomized GetItemNameUncustomized;
 
-    bool InitClient();
+    bool InitClient(std::string &err_msg);
     bool Detach();
 
     char *useToolUnkParam1;

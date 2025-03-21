@@ -60,6 +60,7 @@ target("task_manager")
     add_files("src/task_manager/*.cpp")
     add_files("src/task_manager/window/*.cpp")
     add_files("src/task_manager/utils/*.cpp")
+    add_files("src/task_manager/http/*.cpp")
 
 target("task_handler")
     set_default(true)
@@ -71,6 +72,7 @@ target("task_handler")
     add_files("src/base/*.cpp")
     add_files("src/task_handler/utils/*.cpp")
     add_files("src/task_handler/*.cpp")
+    add_files("src/task_handler/http/*.cpp")
     
 
     add_links("user32", "gdi32")

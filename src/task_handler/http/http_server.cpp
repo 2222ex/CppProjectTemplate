@@ -1,8 +1,8 @@
 #include "http_server.h"
 
+#include "../auto_open_crate.h"
 #include "../base/logger.h"
-#include "auto_open_crate.h"
-#include "client_module.h"
+#include "../client_module.h"
 
 #include <MinHook.h>
 #include <httplib.h>
@@ -13,7 +13,7 @@ bool g_bIsQuit;
 
 void Detach();
 
-bool InitHttpServer()
+bool TaskHandlerHttpServer::InitHttpServer()
 {
     Logger::Log()->info("InitHttpServer");
     httplib::Server svr;
@@ -83,8 +83,8 @@ bool InitHttpServer()
         [&](const httplib::Request &req, httplib::Response &res)
         {
             auto &aoc = AutoOpenCrateSingleton::instance();
-            aoc.GetInventory();
-            res.set_content("call GetInventory", "text/plain"); // appliation/json
+            aoc.UpdateInventory();
+            res.set_content("call UpdateInventory", "text/plain"); // appliation/json
         });
 
     svr.Get(
@@ -106,22 +106,6 @@ bool InitHttpServer()
             res.set_content(json.dump(), "text/plain");
         });
 
-    svr.Post(
-        "/OpenCrate",
-        [&](const httplib::Request &req, httplib::Response &res)
-        {
-            auto &aoc = AutoOpenCrateSingleton::instance();
-
-            AutoOpenCrate::OpenCrateRequest openCrateRequest = nlohmann::json::parse(req.body).get<AutoOpenCrate::OpenCrateRequest>();
-
-            AutoOpenCrate::OpenCrateResult openCrateResult;
-
-            aoc.OpenCrate(openCrateRequest, openCrateResult);
-
-            nlohmann::json json = openCrateResult;
-            res.set_content(json.dump(), "application/json");
-        });
-
     svr.Get(
         "/DumpCrateInfo",
         [&](const httplib::Request &req, httplib::Response &res)
@@ -129,6 +113,73 @@ bool InitHttpServer()
             auto &aoc = AutoOpenCrateSingleton::instance();
             aoc.DumpCrateInfo();
             res.set_content("success", "text/plain");
+        });
+
+    svr.Post(
+        kOpenCrateRequestPath,
+        [&](const httplib::Request &req, httplib::Response &res)
+        {
+            try
+            {
+                auto &aoc = AutoOpenCrateSingleton::instance();
+
+                AutoOpenCrate::OpenCrateRequest openCrateRequest = nlohmann::json::parse(req.body).get<AutoOpenCrate::OpenCrateRequest>();
+
+                AutoOpenCrate::OpenCrateResult openCrateResult;
+
+                aoc.OpenCrate(openCrateRequest, openCrateResult);
+                nlohmann::json json = openCrateResult;
+                Response response = {
+                    true,
+                    "success",
+                    json};
+
+                nlohmann::json json_response = response;
+
+                res.set_content(json_response.dump(), "application/json");
+            }
+            catch (const std::exception &e)
+            {
+                Response response = {
+                    false,
+                    e.what(),
+                    {}};
+
+                nlohmann::json json_response = response;
+
+                res.set_content(json_response.dump(), "application/json");
+            }
+        });
+
+    svr.Get(
+        kGetInventoryItemDetail,
+        [&](const httplib::Request &req, httplib::Response &res)
+        {
+            try
+            {
+                auto &aoc = AutoOpenCrateSingleton::instance();
+
+                nlohmann::json json = aoc.GetInventoryItemDetail();
+                Response response = {
+                    true,
+                    "success",
+                    json};
+
+                nlohmann::json json_response = response;
+
+                res.set_content(json_response.dump(), "application/json");
+            }
+            catch (const std::exception &e)
+            {
+                Response response = {
+                    false,
+                    e.what(),
+                    {}};
+
+                nlohmann::json json_response = response;
+
+                res.set_content(json_response.dump(), "application/json");
+            }
         });
 
     // svr.Post(
@@ -139,7 +190,7 @@ bool InitHttpServer()
     //             {"test", "Test"}};
     //         res.set_content(json.dump(), "appliation/json");
     //     });
-    bool res = svr.listen("localhost", 24960);
+    bool res = svr.listen("localhost", kPort);
     Logger::Log()->info("svr.listen return value: {}", res);
     return res;
 }

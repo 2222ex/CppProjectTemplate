@@ -4,6 +4,7 @@
 #include "../base/logger.h"
 #include "../base/singleton.h"
 #include <nlohmann/json.hpp>
+#include "../common/data_struct.h"
 
 class AutoOpenCrate
 {
@@ -22,6 +23,7 @@ public:
     };
 
     std::vector<Item> inventory;
+    void UpdateInventory();
 
     struct OpenCrateRequest
     {
@@ -35,12 +37,26 @@ public:
     {
         std::string msg;
         bool is_success;
+        std::vector<uint64_t> reward_item_ids;
     };
-    NLOHMANN_DEFINE_TYPE_INTRUSIVE(OpenCrateResult, msg, is_success)
+    NLOHMANN_DEFINE_TYPE_INTRUSIVE(OpenCrateResult, msg, is_success, reward_item_ids)
 
-    void GetInventory();
     void OpenCrate(OpenCrateRequest openCrateRequest, OpenCrateResult &openCrateResult);
 
+
+
+    std::vector<ItemDetail> GetInventoryItemDetail();
+
+    struct OpenSingleCrateRequest
+    {
+        uint64_t crate_item_id;
+        uint64_t key_item_id;
+        bool is_need_tool;
+    };
+    NLOHMANN_DEFINE_TYPE_INTRUSIVE(OpenSingleCrateRequest, crate_item_id, key_item_id, is_need_tool)
+    void OpenSingleCrate(OpenSingleCrateRequest openSingleCrateRequest, OpenCrateResult &openSingleCrateResult);
+
+    // for test
     struct CrateItemInfo
     {
         std::string name;

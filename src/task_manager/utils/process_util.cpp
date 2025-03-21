@@ -1,12 +1,14 @@
 #include "process_util.h"
 
+#include "logger.h"
+
 DWORD GetProcessPIDByName(std::string process_name, std::string &err_msg)
 {
-    DWORD aProcesses[1024], cbNeeded;
+    DWORD aProcesses[4096], cbNeeded;
     if (!EnumProcesses(aProcesses, sizeof(aProcesses), &cbNeeded))
     {
-        err_msg = "EnumProcesses failed";
-        return false;
+        err_msg = fmt::format("EnumProcesses failed, err: {}", GetLastError());
+        return -1;
     }
     unsigned int cProcesses = cbNeeded / sizeof(DWORD);
     for (unsigned int i = 0; i < cProcesses; ++i)
@@ -18,15 +20,22 @@ DWORD GetProcessPIDByName(std::string process_name, std::string &err_msg)
         if (hProcess == NULL)
             continue;
 
-        CloseHandle(hProcess);
-
         HMODULE hMod;
         DWORD cbNeeded;
-        char buff[255];
+        char buff[255] = {0};
         if (EnumProcessModules(hProcess, &hMod, sizeof(hMod), &cbNeeded))
         {
             GetModuleBaseNameA(hProcess, hMod, (LPSTR) &buff, DWORD(sizeof(buff) / sizeof(char)));
         }
+        else
+        {
+
+            err_msg = fmt::format("EnumProcessModules failed, err: {}", GetLastError());
+            continue;
+        }
+        // Logger::Log()->info("process_name: {},buff: {}", process_name, buff);
+
+        CloseHandle(hProcess);
 
         if (std::string(buff) == process_name)
         {

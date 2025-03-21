@@ -3,10 +3,11 @@
 
 #include "http_server.h"
 
+#include "../steam_login.h"
+#include "../task_manager.h"
 #include "logger.h"
-#include "steam_login.h"
 
-bool InitHttpServer()
+bool TaskManagerHttpServer::InitHttpServer()
 {
     Logger::Log()->info("InitHttpServer");
     httplib::Server svr;
@@ -47,7 +48,30 @@ bool InitHttpServer()
                 {"err_msg", err_msg}};
             res.set_content(ret_json.dump(), "appliation/json");
         });
-    bool res = svr.listen("localhost", 24961);
+
+    svr.Post(
+        TaskManagerHttpServer::kDllInitSuccRequestPath,
+        [](const httplib::Request &req, httplib::Response &res)
+        {
+            TaskManagerSingleton::instance().dll_init_succ = true;
+
+            Response response = {true, "success", {}};
+            nlohmann::json ret_json = response;
+            res.set_content(ret_json.dump(), "appliation/json");
+        });
+
+    svr.Post(
+        TaskManagerHttpServer::kDllInitFailedRequestPath,
+        [](const httplib::Request &req, httplib::Response &res)
+        {
+            TaskManagerSingleton::instance().dll_init_succ = false;
+
+            Response response = {true, "success", {}};
+            nlohmann::json ret_json = response;
+            res.set_content(ret_json.dump(), "appliation/json");
+        });
+
+    bool res = svr.listen("localhost", TaskManagerHttpServer::kPort);
     Logger::Log()->info("svr.listen return value: {}", res);
     return res;
 }

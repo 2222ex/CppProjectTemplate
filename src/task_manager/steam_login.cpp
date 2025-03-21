@@ -1,4 +1,4 @@
-#include "steam_login.h"
+﻿#include "steam_login.h"
 
 #include "launcher.h"
 
@@ -41,7 +41,7 @@ bool SteamLogin::before_login(std::string &err_msg)
         }
         if (count == 0 && launcher.AppInfo_steam.is_launch == false)
         {
-            err_msg = "尝试启动steam失败";
+            err_msg = "steam launch failed";
             return false;
         }
     }
@@ -94,7 +94,7 @@ bool SteamLogin::before_login(std::string &err_msg)
     }
     std::this_thread::sleep_for(std::chrono::milliseconds(1000));
 
-    err_msg = "未找到登录标志";
+    err_msg = "ready login flag not found";
     return false;
 }
 
@@ -140,8 +140,19 @@ bool SteamLogin::login(LoginInfo login_info, std::string &err_msg)
             err_msg = "Steam window not found";
             return false;
         }
-        ShowWindow(hSteam, 5);
-        SetForegroundWindow(hSteam);
+        ShowWindow(hSteam, SW_SHOW);
+
+        if (AllowSetForegroundWindow(GetCurrentProcessId()) == 0)
+        {
+            err_msg = fmt::format("AllowSetForegroundWindow failed, err_code: {}", GetLastError());
+
+            return false;
+        }
+        if (SetForegroundWindow(hSteam) == 0)
+        {
+            err_msg = "SetForegroundWindow failed";
+            return false;
+        }
 
         stwm.focusOnElement(stwm.kAccountUserInputPath);
 
@@ -214,6 +225,7 @@ bool SteamLogin::login(LoginInfo login_info, std::string &err_msg)
         if (login_tip == "请核对您的密码和帐户名称并重试。")
         {
             err_msg = "账号或密码错误";
+            log_out(err_msg);
             return false;
         }
 
@@ -227,6 +239,7 @@ bool SteamLogin::login(LoginInfo login_info, std::string &err_msg)
         if (tokenTip == "代码错误，请重试")
         {
             err_msg = "令牌错误";
+            log_out(err_msg);
             return false;
         }
 
@@ -251,7 +264,7 @@ bool SteamLogin::login(LoginInfo login_info, std::string &err_msg)
 bool SteamLogin::log_out(std::string &err_msg)
 {
     auto &launcher = LauncherSingleton::instance();
-    
+
     launcher.terminate_application(launcher.AppInfo_steam, err_msg);
     is_before_login_succ = false;
     is_need_before_login = true;

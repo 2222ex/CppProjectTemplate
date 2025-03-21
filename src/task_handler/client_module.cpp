@@ -80,7 +80,7 @@ char *ClientModule::GetCEconItemViewValveDefName(uintptr_t CEconItemView_item)
     return *(char **) (temp + 496);
 }
 
-bool ClientModule::InitClient()
+bool ClientModule::InitClient(std::string &err_msg)
 {
     auto f_init_GetCSInventoryManager = [this](uint64_t addr)
     {
@@ -156,7 +156,7 @@ bool ClientModule::InitClient()
         uintptr_t pattern_addr = search_pattern_in_module(miModule, hexstring2shorts(pair.second.pattern));
         if (pattern_addr == 0)
         {
-            Logger::Log()->error("{} pattern not found!", pair.first);
+            err_msg = fmt::format("{} pattern not found!", pair.first);
             return false;
         }
         int offset = pair.second.offset;
@@ -165,7 +165,7 @@ bool ClientModule::InitClient()
 
         if (pair.second.func(pattern_addr + offset) == false)
         {
-            Logger::Log()->error("init {} failed", pair.first);
+            err_msg = fmt::format("init {} failed", pair.first);
             return false;
         }
     }
