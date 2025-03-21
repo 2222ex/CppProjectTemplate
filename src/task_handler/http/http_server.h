@@ -6,8 +6,6 @@
 namespace TaskHandlerHttpServer
 {
 
-const std::string kOpenCrateRequestPath = "/OpenCrate";
-const std::string kGetInventoryItemDetail = "/GetInventoryItemDetail";
 const int kPort = 24960;
 bool InitHttpServer();
 };

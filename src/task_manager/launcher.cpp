@@ -6,36 +6,6 @@ Launcher::Launcher()
 {
     log = Logger::Log();
 
-    // AppInfo_steam = {
-    //     .name = "steamwebhelper.exe",
-    //     .path = kSteamLauncherPath,
-    //     .launch_param = kSteamLauncherParam,
-    //     .pi = {},
-    //     .exit_code = 0,
-    //     .is_launch = false,
-    //     .success_call_back = {}
-
-    // };
-
-    AppInfo_steam.name = "steam.exe";
-    AppInfo_steam.path = kSteamLauncherPath;
-    AppInfo_steam.launch_param = kSteamLauncherParam,
-    AppInfo_steam.pi = {};
-    AppInfo_steam.exit_code = 0;
-    AppInfo_steam.is_launch = false;
-    AppInfo_steam.success_call_back = {};
-
-    // AppInfo_cs2 = {
-    //     .name = "cs2.exe",
-    //     .path = kGameLauncherPath,
-    //     .launch_param = kGameLaunchParam,
-    //     .pi = {},
-    //     .exit_code = 0,
-    //     .is_launch = false,
-    //     .success_call_back = {}
-
-    // };
-
     AppInfo_cs2.name = "cs2.exe";
     AppInfo_cs2.path = kGameLauncherPath;
     AppInfo_cs2.launch_param = kGameLaunchParam;

@@ -6,13 +6,6 @@ if is_plat("windows") then
     add_rules("plugin.vsxmake.autoupdate")
 end
 
-add_requires("boost", {
-    configs = {
-        asio=true,
-        random=true
-    }
-})
-
 add_packages("boost")
 
 local packages = {
@@ -30,10 +23,10 @@ end
 
 
 set_languages("c++23")
--- set_arch("x86")
+
 
 if is_plat("windows") then
-    set_arch("x64")
+    
 elseif is_plat("linux") then
     set_arch("x86_64")
 end
@@ -62,6 +55,8 @@ target("task_manager")
     add_files("src/task_manager/utils/*.cpp")
     add_files("src/task_manager/http/*.cpp")
 
+    add_links("user32", "gdi32","advapi32.lib")
+
 target("task_handler")
     set_default(true)
 
@@ -75,5 +70,5 @@ target("task_handler")
     add_files("src/task_handler/http/*.cpp")
     
 
-    add_links("user32", "gdi32")
+    add_links("user32", "gdi32","advapi32.lib")
 

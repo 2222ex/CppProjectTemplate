@@ -4,7 +4,6 @@
 
 #include "../injector.h"
 #include "../launcher.h"
-#include "../steam_login.h"
 
 TestWindow::TestWindow()
 {
@@ -86,79 +85,6 @@ void TestWindow::render_window()
             }
         }
         injector.UnLoadLibrary(dll_path.string().c_str(), target_PID, tip_text);
-    }
-
-    if (ImGui::Button("DumpInventoryToConsole"))
-    {
-        if (auto res = cli.Get("/DumpInventoryToConsole"))
-        {
-            http_tip = res->body;
-        }
-    }
-
-    if (ImGui::Button("MyGetItemVectorInfo"))
-    {
-        if (auto res = cli.Get("/MyGetItemVectorInfo"))
-        {
-            http_tip = res->body;
-        }
-    }
-
-    ImGui::Separator();
-
-    ImGui::Text("Launcher");
-
-    if (ImGui::Button("Launch game"))
-    {
-
-        std::thread([]()
-                    {
-                        auto &launcher = LauncherSingleton::instance();
-                        launcher.launch_application(launcher.AppInfo_cs2);
-                    })
-            .detach();
-    }
-
-    ImGui::SameLine();
-    if (ImGui::Button("Terminate Game"))
-    {
-
-        std::thread([]()
-                    {
-                        auto &launcher = LauncherSingleton::instance();
-                        std::string err_msg;
-                        if (launcher.terminate_application(launcher.AppInfo_cs2, err_msg) == false)
-                        {
-                            Logger::Log()->error("terminate application failed: {}", err_msg);
-                        }
-                    })
-            .detach();
-    }
-
-    if (ImGui::Button("Launch Steam"))
-    {
-        std::thread(
-            []()
-            {
-                auto &instance = SteamLoginSingleton::instance();
-                std::string err_msg;
-                SteamLogin::LoginInfo login_info = {
-                    "111",
-                    "123",
-                    "111111"};
-                instance.login(login_info, err_msg);
-            })
-            .detach();
-    }
-
-    if (ImGui::Button("Terminate Steam"))
-    {
-        auto &launcher = LauncherSingleton::instance();
-        std::string err_msg;
-        if (launcher.terminate_application(launcher.AppInfo_steam, err_msg) == false)
-        {
-            Logger::Log()->error("terminate application failed: {}", err_msg);
-        }
     }
 
     ImGui::End();

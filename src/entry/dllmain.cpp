@@ -3,7 +3,6 @@
 #include "../base/logger.h"
 #include "../base/stdafx.h"
 #include "../task_handler/client_module.h"
-#include "../task_handler/panorama_module.h"
 
 #include <MinHook.h>
 
@@ -54,11 +53,6 @@ void Init()
 
     module_list.push_back(std::shared_ptr<BaseModule>(&client, [](BaseModule *) {}));
 
-    auto &panorama = PanoramaModuleSingleton::instance();
-    panorama.InitModuleInfo("panorama.dll");
-    panorama.InitPanorama();
-    module_list.push_back(std::shared_ptr<BaseModule>(&panorama, [](BaseModule *) {}));
-
     for (size_t i = 0; i < module_list.size(); i++)
     {
         for (auto &pair : module_list.at(i)->hookInfoMap)
@@ -99,8 +93,6 @@ void Detach()
 {
     Logger::Log()->info("Prepare to detach this module");
     auto &client = ClientModuleSingleton::instance();
-
-    client.Detach();
 
     for (size_t i = 0; i < module_list.size(); i++)
     {
