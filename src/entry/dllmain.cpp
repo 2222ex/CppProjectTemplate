@@ -92,7 +92,6 @@ void Init()
 void Detach()
 {
     Logger::Log()->info("Prepare to detach this module");
-    auto &client = ClientModuleSingleton::instance();
 
     for (size_t i = 0; i < module_list.size(); i++)
     {

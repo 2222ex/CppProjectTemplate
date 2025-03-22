@@ -20,16 +20,7 @@ for _, package in ipairs(packages) do
     add_packages(package:match("^[^ ]+"))
 end
 
-
-
 set_languages("c++23")
-
-
-if is_plat("windows") then
-    
-elseif is_plat("linux") then
-    set_arch("x86_64")
-end
 
 add_includedirs("src/base")
 

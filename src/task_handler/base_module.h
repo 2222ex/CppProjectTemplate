@@ -37,15 +37,16 @@ public:
     {
         if (moduleName.empty())
         {
-            Logger::Log()->error("moduleName empty");
-            return false;
+            hModule = GetModuleHandleA(NULL);
         }
-
-        hModule = GetModuleHandle(moduleName.c_str());
-        if (hModule == NULL)
+        else
         {
-            Logger::Log()->error("{} GetModuleHandle err", moduleName);
-            return false;
+            hModule = GetModuleHandle(moduleName.c_str());
+            if (hModule == NULL)
+            {
+                Logger::Log()->error("{} GetModuleHandle err", moduleName);
+                return false;
+            }
         }
 
         base = (DWORD_PTR) hModule;
