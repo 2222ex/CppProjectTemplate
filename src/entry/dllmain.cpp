@@ -24,7 +24,7 @@ struct InitResult
 void Init()
 {
     // MessageBoxA(NULL, "Inject!", "Success", MB_OK);
-    Logger::Log()->info("Init");
+    SPDLOG_LOGGER_INFO(Logger::Log(), "Init");
 
     httplib::Client cli("localhost", TaskManagerHttpServer::kPort);
     std::string err_msg;
@@ -35,7 +35,7 @@ void Init()
         InitResult init_result = {false, err_msg};
         nlohmann::json json_init_result = init_result;
         cli.Post(TaskManagerHttpServer::kDllInitFailedRequestPath, json_init_result.dump(), "application/json");
-        Logger::Log()->error("{}", err_msg);
+        SPDLOG_LOGGER_ERROR(Logger::Log(), "{}", err_msg);
         return;
     }
 
@@ -47,7 +47,7 @@ void Init()
         InitResult init_result = {false, err_msg};
         nlohmann::json json_init_result = init_result;
         cli.Post(TaskManagerHttpServer::kDllInitFailedRequestPath, json_init_result.dump(), "application/json");
-        Logger::Log()->error("client init failed: {}", err_msg);
+        SPDLOG_LOGGER_ERROR(Logger::Log(), "client init failed: {}", err_msg);
         return;
     }
 
@@ -64,7 +64,7 @@ void Init()
                 InitResult init_result = {false, err_msg};
                 nlohmann::json json_init_result = init_result;
                 cli.Post(TaskManagerHttpServer::kDllInitFailedRequestPath, json_init_result.dump(), "application/json");
-                Logger::Log()->error("{}", err_msg);
+                SPDLOG_LOGGER_ERROR(Logger::Log(), "{}", err_msg);
                 return;
             }
             if (MH_EnableHook(hookInfo.pTarget) != MH_OK)
@@ -73,7 +73,7 @@ void Init()
                 InitResult init_result = {false, err_msg};
                 nlohmann::json json_init_result = init_result;
                 cli.Post(TaskManagerHttpServer::kDllInitFailedRequestPath, json_init_result.dump(), "application/json");
-                Logger::Log()->error("{}", err_msg);
+                SPDLOG_LOGGER_ERROR(Logger::Log(), "{}", err_msg);
                 return;
             }
         }
@@ -86,12 +86,12 @@ void Init()
     InitResult init_result = {true, err_msg};
     nlohmann::json json_init_result = init_result;
     cli.Post(TaskManagerHttpServer::kDllInitSuccRequestPath, json_init_result.dump(), "application/json");
-    Logger::Log()->info("dll init success");
+    SPDLOG_LOGGER_INFO(Logger::Log(), "dll init success");
 }
 
 void Detach()
 {
-    Logger::Log()->info("Prepare to detach this module");
+    SPDLOG_LOGGER_INFO(Logger::Log(), "Prepare to detach this module");
 
     for (size_t i = 0; i < module_list.size(); i++)
     {
@@ -100,7 +100,7 @@ void Detach()
             auto hookInfo = pair.second;
             if (int res = MH_DisableHook(hookInfo.pTarget) != MH_OK)
             {
-                Logger::Log()->error("MH_DisableHook {} failed,status: {}", pair.first, res);
+                SPDLOG_LOGGER_ERROR(Logger::Log(), "MH_DisableHook {} failed,status: {}", pair.first, res);
                 continue;
             }
         }
@@ -108,7 +108,7 @@ void Detach()
 
     if (MH_Uninitialize() != MH_OK)
     {
-        Logger::Log()->error("MH_Uninitialize failed");
+        SPDLOG_LOGGER_ERROR(Logger::Log(), "MH_Uninitialize failed");
     }
 }
 

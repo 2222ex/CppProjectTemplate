@@ -36,7 +36,7 @@ int main(int argc, char *argv[])
 {
     if (EnableDebugPrivilege() == FALSE)
     {
-        Logger::Log()->error("EnableDebugPrivilege failed");
+        SPDLOG_LOGGER_ERROR(Logger::Log(), "EnableDebugPrivilege failed");
     }
 
     std::thread(TaskManagerHttpServer::InitHttpServer).detach();

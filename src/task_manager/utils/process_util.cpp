@@ -33,7 +33,7 @@ DWORD GetProcessPIDByName(std::string process_name, std::string &err_msg)
             err_msg = fmt::format("EnumProcessModules failed, err: {}", GetLastError());
             continue;
         }
-        // Logger::Log()->info("process_name: {},buff: {}", process_name, buff);
+        // SPDLOG_LOGGER_INFO(Logger::Log(),"process_name: {},buff: {}", process_name, buff);
 
         CloseHandle(hProcess);
 

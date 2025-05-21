@@ -23,7 +23,7 @@ bool ClientModule::InitClient(std::string &err_msg)
 
     for (auto pair : pattern_map)
     {
-        Logger::Log()->info("init_{}", pair.first);
+        SPDLOG_LOGGER_INFO(Logger::Log(), "init_{}", pair.first);
         uintptr_t pattern_addr = search_pattern_in_module(miModule, hexstring2shorts(pair.second.pattern));
         if (pattern_addr == 0)
         {
@@ -32,7 +32,7 @@ bool ClientModule::InitClient(std::string &err_msg)
         }
         int offset = pair.second.offset;
 
-        Logger::Log()->info("pattern_addr + offset: {:#x}", pattern_addr + offset);
+        SPDLOG_LOGGER_INFO(Logger::Log(), "pattern_addr + offset: {:#x}", pattern_addr + offset);
 
         if (pair.second.func(pattern_addr + offset) == false)
         {

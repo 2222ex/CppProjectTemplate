@@ -20,20 +20,20 @@ bool Launcher::launch_application(AppInfo &appInfo)
     SPDLOG_LOGGER_TRACE(log, "Launcher::launch_application");
     if (appInfo.is_launch.load())
     {
-        Logger::Log()->info("application {} already launch", appInfo.name);
+        SPDLOG_LOGGER_INFO(Logger::Log(), "application {} already launch", appInfo.name);
         return true;
     }
 
     std::string err_msg;
     DWORD pid = GetProcessPIDByName(appInfo.name, err_msg);
 
-    Logger::Log()->info("get process {} pid: {},err_msg: {}", appInfo.name, pid, err_msg);
+    SPDLOG_LOGGER_INFO(Logger::Log(), "get process {} pid: {},err_msg: {}", appInfo.name, pid, err_msg);
     if (pid != 0)
     {
         HANDLE hProcess = OpenProcess(PROCESS_ALL_ACCESS, FALSE, pid);
         appInfo.pi.hProcess = hProcess;
 
-        Logger::Log()->info("steam already running");
+        SPDLOG_LOGGER_INFO(Logger::Log(), "steam already running");
 
         TerminateProcess(hProcess, 0);
     }

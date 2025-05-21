@@ -44,7 +44,7 @@ public:
             hModule = GetModuleHandle(moduleName.c_str());
             if (hModule == NULL)
             {
-                Logger::Log()->error("{} GetModuleHandle err", moduleName);
+                SPDLOG_LOGGER_ERROR(Logger::Log(), "{} GetModuleHandle err", moduleName);
                 return false;
             }
         }
@@ -55,7 +55,7 @@ public:
 
         if (GetModuleInformation(GetCurrentProcess(), hModule, &miModule, sizeof(MODULEINFO)) == false)
         {
-            Logger::Log()->error("{} GetModuleInformation err", moduleName);
+            SPDLOG_LOGGER_ERROR(Logger::Log(), "{} GetModuleInformation err", moduleName);
             return false;
         }
 

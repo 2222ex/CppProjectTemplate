@@ -11,7 +11,7 @@ void Detach();
 
 bool TaskHandlerHttpServer::InitHttpServer()
 {
-    Logger::Log()->info("InitHttpServer");
+    SPDLOG_LOGGER_INFO(Logger::Log(), "InitHttpServer");
     httplib::Server svr;
 
     svr.Get(
@@ -31,6 +31,6 @@ bool TaskHandlerHttpServer::InitHttpServer()
         });
 
     bool res = svr.listen("localhost", kPort);
-    Logger::Log()->info("svr.listen return value: {}", res);
+    SPDLOG_LOGGER_INFO(Logger::Log(), "svr.listen return value: {}", res);
     return res;
 }
