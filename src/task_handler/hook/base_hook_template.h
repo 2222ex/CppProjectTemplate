@@ -1,9 +1,10 @@
 #ifndef BASE_HOOK_TEMPLATE_H
 #define BASE_HOOK_TEMPLATE_H
 
+#include "base/logger.h"
+#include "base/stdafx.h"
 #include "hook_id.h"
-#include "logging.h"
-#include "stdafx.h"
+
 #include <MinHook.h>
 
 template<int ID, typename FuncType, typename Ret, typename... Args>

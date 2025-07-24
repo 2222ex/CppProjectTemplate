@@ -2,5 +2,5 @@
 
 enum StaticHookId
 {
-
+    Hook_TestHook
 };

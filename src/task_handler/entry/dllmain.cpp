@@ -18,10 +18,14 @@ struct InitResult
     NLOHMANN_DEFINE_TYPE_INTRUSIVE(InitResult, is_success, err_msg);
 };
 
-void Init()
+bool Init()
 {
+    std::shared_ptr<spdlog::logger> logger = Logger::getLogger("main2", true);
     // MessageBoxA(NULL, "Inject!", "Success", MB_OK);
-    SPDLOG_LOGGER_INFO(Logger::Log(), "Init");
+    SPDLOG_LOGGER_INFO(logger, "Init");
+
+    std::thread http_thread(&TaskHandlerHttpServer::InitHttpServer);
+    http_thread.detach();
 
     httplib::Client cli("localhost", TaskManagerHttpServer::kPort);
     std::string err_msg;
@@ -32,8 +36,8 @@ void Init()
         InitResult init_result = {false, err_msg};
         nlohmann::json json_init_result = init_result;
         cli.Post(TaskManagerHttpServer::kDllInitFailedRequestPath, json_init_result.dump(), "application/json");
-        SPDLOG_LOGGER_ERROR(Logger::Log(), "{}", err_msg);
-        return;
+        SPDLOG_LOGGER_ERROR(logger, "{}", err_msg);
+        return false;
     }
 
     auto &main = MainModuleSingleton::instance();
@@ -44,27 +48,25 @@ void Init()
         InitResult init_result = {false, err_msg};
         nlohmann::json json_init_result = init_result;
         cli.Post(TaskManagerHttpServer::kDllInitFailedRequestPath, json_init_result.dump(), "application/json");
-        SPDLOG_LOGGER_ERROR(Logger::Log(), "main init failed: {}", err_msg);
-        return;
+        SPDLOG_LOGGER_ERROR(logger, "main init failed: {}", err_msg);
+        return false;
     }
-
-    std::thread http_thread(&TaskHandlerHttpServer::InitHttpServer);
-    http_thread.detach();
 
     err_msg = "";
     InitResult init_result = {true, err_msg};
     nlohmann::json json_init_result = init_result;
     cli.Post(TaskManagerHttpServer::kDllInitSuccRequestPath, json_init_result.dump(), "application/json");
-    SPDLOG_LOGGER_INFO(Logger::Log(), "dll init success");
+    SPDLOG_LOGGER_INFO(logger, "dll init success");
 }
 
 void Detach()
 {
-    SPDLOG_LOGGER_INFO(Logger::Log(), "Prepare to detach this module");
+    std::shared_ptr<spdlog::logger> logger = Logger::getLogger("main2", true);
+    SPDLOG_LOGGER_INFO(logger, "Prepare to detach this module");
 
     if (MH_Uninitialize() != MH_OK)
     {
-        SPDLOG_LOGGER_ERROR(Logger::Log(), "MH_Uninitialize failed");
+        SPDLOG_LOGGER_ERROR(logger, "MH_Uninitialize failed");
     }
 }
 
@@ -77,6 +79,7 @@ bool __stdcall DllMain(HANDLE hInstance, DWORD dwReason, LPVOID lpReserved)
     {
 
         Init();
+
         break;
     }
     case DLL_THREAD_ATTACH:
