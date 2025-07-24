@@ -2,14 +2,12 @@
 
 #include "../base/logger.h"
 #include "../base/stdafx.h"
-#include "../task_handler/client_module.h"
+#include "../task_handler/main_module.h"
 
 #include <MinHook.h>
 
 #include "../task_handler/http/http_server.h"
 #include "../task_manager/http/http_server.h"
-
-std::vector<std::shared_ptr<BaseModule>> module_list;
 
 #include <httplib.h>
 #include <nlohmann/json.hpp>
@@ -39,44 +37,16 @@ void Init()
         return;
     }
 
-    auto &client = ClientModuleSingleton::instance();
-    client.InitModuleInfo("client.dll");
+    auto &main = MainModuleSingleton::instance();
+    main.InitModuleInfo();
 
-    if (client.InitClient(err_msg) == false)
+    if (main.InitClient(err_msg) == false)
     {
         InitResult init_result = {false, err_msg};
         nlohmann::json json_init_result = init_result;
         cli.Post(TaskManagerHttpServer::kDllInitFailedRequestPath, json_init_result.dump(), "application/json");
-        SPDLOG_LOGGER_ERROR(Logger::Log(), "client init failed: {}", err_msg);
+        SPDLOG_LOGGER_ERROR(Logger::Log(), "main init failed: {}", err_msg);
         return;
-    }
-
-    module_list.push_back(std::shared_ptr<BaseModule>(&client, [](BaseModule *) {}));
-
-    for (size_t i = 0; i < module_list.size(); i++)
-    {
-        for (auto &pair : module_list.at(i)->hookInfoMap)
-        {
-            auto hookInfo = pair.second;
-            if (int res = MH_CreateHook(hookInfo.pTarget, hookInfo.pDetour, hookInfo.ppOriginal) != MH_OK)
-            {
-                err_msg = fmt::format("MH_CreateHook {} failed,status: {}", pair.first, res);
-                InitResult init_result = {false, err_msg};
-                nlohmann::json json_init_result = init_result;
-                cli.Post(TaskManagerHttpServer::kDllInitFailedRequestPath, json_init_result.dump(), "application/json");
-                SPDLOG_LOGGER_ERROR(Logger::Log(), "{}", err_msg);
-                return;
-            }
-            if (MH_EnableHook(hookInfo.pTarget) != MH_OK)
-            {
-                err_msg = fmt::format("MH_CreateHook {} failed", pair.first);
-                InitResult init_result = {false, err_msg};
-                nlohmann::json json_init_result = init_result;
-                cli.Post(TaskManagerHttpServer::kDllInitFailedRequestPath, json_init_result.dump(), "application/json");
-                SPDLOG_LOGGER_ERROR(Logger::Log(), "{}", err_msg);
-                return;
-            }
-        }
     }
 
     std::thread http_thread(&TaskHandlerHttpServer::InitHttpServer);
@@ -92,19 +62,6 @@ void Init()
 void Detach()
 {
     SPDLOG_LOGGER_INFO(Logger::Log(), "Prepare to detach this module");
-
-    for (size_t i = 0; i < module_list.size(); i++)
-    {
-        for (auto &pair : module_list.at(i)->hookInfoMap)
-        {
-            auto hookInfo = pair.second;
-            if (int res = MH_DisableHook(hookInfo.pTarget) != MH_OK)
-            {
-                SPDLOG_LOGGER_ERROR(Logger::Log(), "MH_DisableHook {} failed,status: {}", pair.first, res);
-                continue;
-            }
-        }
-    }
 
     if (MH_Uninitialize() != MH_OK)
     {

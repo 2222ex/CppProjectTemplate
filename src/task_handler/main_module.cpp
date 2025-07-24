@@ -1,15 +1,15 @@
-﻿#include "client_module.h"
+﻿#include "main_module.h"
 
 #include "utils/data_transform_util.h"
 #include "utils/pattern_util.h"
 
 #include "MinHook.h"
 
-ClientModule::ClientModule(/* args */)
+MainModule::MainModule(/* args */)
 {
 }
 
-bool ClientModule::InitClient(std::string &err_msg)
+bool MainModule::InitClient(std::string &err_msg)
 {
     auto f1 = [this](uint64_t addr)
     {
@@ -41,5 +41,5 @@ bool ClientModule::InitClient(std::string &err_msg)
         }
     }
 
-    return false;
+    return true;
 }

@@ -28,7 +28,7 @@ target("task_manager")
     set_default(true)
 
     set_kind("binary")
-    add_files("src/entry/main.cpp")
+    add_files("src/task_manager/entry/main.cpp")
 
     add_includedirs("3rd/imgui-1.91.8/backends")
     add_includedirs("3rd/imgui-1.91.8")
@@ -52,13 +52,15 @@ target("task_handler")
     set_default(true)
 
     set_kind("shared")
-    add_files("src/entry/dllmain.cpp")
+    add_files("src/task_handler/entry/dllmain.cpp")
 
     set_pcxxheader("src/base/stdafx.h")
     add_files("src/base/*.cpp")
     add_files("src/task_handler/utils/*.cpp")
     add_files("src/task_handler/*.cpp")
     add_files("src/task_handler/http/*.cpp")
+
+    add_includedirs("src/task_handler")
     
 
     add_links("user32", "gdi32","advapi32.lib")

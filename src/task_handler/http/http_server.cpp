@@ -1,7 +1,7 @@
 #include "http_server.h"
 
 #include "../base/logger.h"
-#include "../client_module.h"
+#include "main_module.h"
 
 #include <MinHook.h>
 #include <httplib.h>

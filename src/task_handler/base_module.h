@@ -25,15 +25,7 @@ public:
     {
     }
 
-    struct HookInfo
-    {
-        LPVOID pTarget;
-        LPVOID pDetour;
-        LPVOID *ppOriginal;
-    };
-    std::map<std::string, HookInfo> hookInfoMap;
-
-    bool InitModuleInfo(std::string moduleName)
+    bool InitModuleInfo(std::string moduleName = "")
     {
         if (moduleName.empty())
         {
@@ -41,12 +33,14 @@ public:
         }
         else
         {
-            hModule = GetModuleHandle(moduleName.c_str());
-            if (hModule == NULL)
-            {
-                SPDLOG_LOGGER_ERROR(Logger::Log(), "{} GetModuleHandle err", moduleName);
-                return false;
-            }
+            hModule = GetModuleHandleA(moduleName.c_str());
+        }
+
+        if (hModule == NULL)
+        {
+
+            SPDLOG_LOGGER_ERROR(Logger::Log(), "GetModuleHandle {} failed, GetLastError: {}", moduleName, GetLastError());
+            return false;
         }
 
         base = (DWORD_PTR) hModule;
