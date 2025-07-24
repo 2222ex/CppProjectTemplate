@@ -11,19 +11,17 @@
 class Logger
 {
 public:
-    static Logger &getInstance();
-
     static std::shared_ptr<spdlog::logger> Log();
 
-    static std::shared_ptr<spdlog::logger> getNamedLogger(std::string &&logger_name);
+    static std::shared_ptr<spdlog::logger> getLogger(const std::string &logger_name, bool to_console = false);
 
 private:
     Logger();
     Logger(Logger const &) = delete;
     Logger &operator=(Logger const &) = delete;
-    std::shared_ptr<spdlog::logger> getThreadLogger(std::string thread_name);
+
     std::shared_ptr<spdlog::logger> rootLogger;
-    std::unordered_map<std::string, std::shared_ptr<spdlog::logger>> loggers;
+    static std::unordered_map<std::string, std::shared_ptr<spdlog::logger>> loggers;
 };
 
 #endif // LOGGER_H
