@@ -1,5 +1,5 @@
-﻿#include "../base/logger.h"
-#include "../base/stdafx.h"
+﻿#include "base/logger.h"
+#include "base/stdafx.h"
 
 #include "../task_manager/http/http_server.h"
 

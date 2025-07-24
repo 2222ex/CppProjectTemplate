@@ -6,11 +6,9 @@ if is_plat("windows") then
     add_rules("plugin.vsxmake.autoupdate")
 end
 
-add_packages("boost")
-
 local packages = {
     "nlohmann_json v3.11.3",
-    "spdlog v1.14.1",
+    "spdlog v1.15.3",
     "minhook",
     "cpp-httplib"
 }
@@ -22,46 +20,21 @@ end
 
 set_languages("c++23")
 
-add_includedirs("src/base")
 
-target("task_manager")
-    set_default(true)
 
-    set_kind("binary")
-    add_files("src/task_manager/entry/main.cpp")
+if is_mode("debug") then
+    set_runtimes("MDd")
+    set_optimize("none")
+    set_warnings("all", "extra")
 
-    add_includedirs("3rd/imgui-1.91.8/backends")
-    add_includedirs("3rd/imgui-1.91.8")
-    add_files("3rd/imgui-1.91.8/imgui.cpp")
-    add_files("3rd/imgui-1.91.8/imgui_tables.cpp")
-    add_files("3rd/imgui-1.91.8/imgui_draw.cpp")
-    add_files("3rd/imgui-1.91.8/imgui_widgets.cpp")
-    add_files("3rd/imgui-1.91.8/backends/imgui_impl_dx11.cpp")
-    add_files("3rd/imgui-1.91.8/backends/imgui_impl_win32.cpp")
+else
+    set_runtimes("MD")
+    set_optimize("fastest")
+end
 
-    set_pcxxheader("src/base/stdafx.h")
-    add_files("src/base/*.cpp")
-    add_files("src/task_manager/*.cpp")
-    add_files("src/task_manager/window/*.cpp")
-    add_files("src/task_manager/utils/*.cpp")
-    add_files("src/task_manager/http/*.cpp")
+includes("src/common")
+includes("src/task_manager")
+includes("src/task_handler")
+includes("src/test_target")
 
-    add_links("user32", "gdi32","advapi32.lib")
-
-target("task_handler")
-    set_default(true)
-
-    set_kind("shared")
-    add_files("src/task_handler/entry/dllmain.cpp")
-
-    set_pcxxheader("src/base/stdafx.h")
-    add_files("src/base/*.cpp")
-    add_files("src/task_handler/utils/*.cpp")
-    add_files("src/task_handler/*.cpp")
-    add_files("src/task_handler/http/*.cpp")
-
-    add_includedirs("src/task_handler")
-    
-
-    add_links("user32", "gdi32","advapi32.lib")
 

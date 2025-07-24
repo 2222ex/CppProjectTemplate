@@ -1,8 +1,8 @@
 ﻿#ifndef BASE_MODULE_H
 #define BASE_MODULE_H
 
-#include "../base/logger.h"
-#include "../base/stdafx.h"
+#include "base/logger.h"
+#include "base/stdafx.h"
 
 #include <Psapi.h>
 

@@ -1,8 +1,7 @@
 ﻿#ifndef MAIN_MODULE_H
 #define MAIN_MODULE_H
 
-#include "../base/logger.h"
-#include "../base/singleton.h"
+#include "base/logger.h"
 #include "base_module.h"
 
 struct PatternInfo

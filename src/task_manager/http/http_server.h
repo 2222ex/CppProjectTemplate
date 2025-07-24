@@ -1,8 +1,8 @@
 ﻿#ifndef TASK_MANAGER_HTTP_SERVER_H
 #define TASK_MANAGER_HTTP_SERVER_H
 
-#include "stdafx.h"
 #include "../common/http/http_server.h"
+#include "base/stdafx.h"
 
 namespace TaskManagerHttpServer
 {

@@ -1,10 +1,9 @@
 ﻿#ifndef INJECTOR_H
 #define INJECTOR_H
 
-#include "../base/singleton.h"
-#include "../base/stdafx.h"
+#include "base/logger.h"
 
-#include "../base/logger.h"
+#include "base/stdafx.h"
 
 #include "tchar.h"
 

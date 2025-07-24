@@ -1,8 +1,8 @@
 ﻿
 
-#include "../base/logger.h"
-#include "../base/stdafx.h"
 #include "../task_handler/main_module.h"
+#include "base/logger.h"
+#include "base/stdafx.h"
 
 #include <MinHook.h>
 
@@ -10,7 +10,6 @@
 #include "../task_manager/http/http_server.h"
 
 #include <httplib.h>
-#include <nlohmann/json.hpp>
 
 struct InitResult
 {

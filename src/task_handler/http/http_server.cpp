@@ -1,6 +1,6 @@
 #include "http_server.h"
 
-#include "../base/logger.h"
+#include "base/logger.h"
 #include "main_module.h"
 
 #include <MinHook.h>

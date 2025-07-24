@@ -37,6 +37,8 @@
 #include <utility>
 #include <vector>
 
+#include "singleton.h"
+
 namespace fs = std::filesystem;
 
 #include <nlohmann/json.hpp>

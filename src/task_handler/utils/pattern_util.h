@@ -3,7 +3,7 @@
 
 #pragma once
 
-#include "../../base/stdafx.h"
+#include "base/stdafx.h"
 
 #include <Windows.h>
 

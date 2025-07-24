@@ -1,9 +1,8 @@
 ﻿#ifndef LAUNCHER_H
 #define LAUNCHER_H
 
-#include "../base/logger.h"
-#include "../base/singleton.h"
-#include "../base/stdafx.h"
+#include "base/logger.h"
+#include "base/stdafx.h"
 
 struct AppInfo
 {

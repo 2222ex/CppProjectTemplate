@@ -1,8 +1,7 @@
 ﻿#ifndef PROD_WINDOW_H
 #define PROD_WINDOW_H
 
-#include "singleton.h"
-#include "stdafx.h"
+#include "base/stdafx.h"
 
 #include <d3d11.h>
 #include <imgui.h>
