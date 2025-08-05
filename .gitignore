@@ -2,3 +2,5 @@
 build/
 .vscode/compile_commands.json
 log/
+3rd/OpenSSL-3.4.1
+3rd/Microsoft.Web.WebView2.1.0.3351.48
