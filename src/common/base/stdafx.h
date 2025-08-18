@@ -44,4 +44,8 @@ namespace fs = std::filesystem;
 #include <nlohmann/json.hpp>
 using json = nlohmann::json;
 
+#include <concurrentqueue.h>
+
+#include <taskflow/taskflow.hpp>
+
 #endif // STDAFX_H

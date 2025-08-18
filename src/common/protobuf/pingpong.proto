@@ -1,0 +1,11 @@
+﻿syntax = "proto3";
+
+message CPing
+{
+    string msg = 1;
+}
+
+message CPong
+{
+    string msg = 1;
+}

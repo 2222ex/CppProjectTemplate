@@ -5,7 +5,11 @@
     set_policy("build.optimization.lto", false)
     set_policy("build.ccache", false)
 
+    add_rules("protobuf.cpp")
+    add_files("protobuf/*.proto", {proto_public = true})
+
     add_includedirs("./", {public = true})
     set_pcxxheader("base/stdafx.h")
 
     add_files("base/*.cpp")
+    add_files("ipc/*.cpp")

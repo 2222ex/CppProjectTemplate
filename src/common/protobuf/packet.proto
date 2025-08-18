@@ -1,0 +1,21 @@
+﻿syntax = "proto3";
+import "pingpong.proto";
+
+message CMsgHeader
+{
+
+}
+
+message CMsgContent
+{
+    oneof msg_tpye{
+        CPing ping = 1;
+        CPong pong = 2;
+    }
+}
+
+message Packet
+{
+    CMsgHeader header = 1;
+    CMsgContent content = 2;
+}

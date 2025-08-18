@@ -10,7 +10,11 @@ local packages = {
     "nlohmann_json v3.11.3",
     "spdlog v1.15.3",
     "minhook",
-    "cpp-httplib"
+    "cpp-httplib",
+    "cpp-ipc",
+    "protobuf-cpp",
+    "concurrentqueue",
+    "taskflow"
 }
 
 for _, package in ipairs(packages) do
@@ -31,8 +35,8 @@ else
 end
 
 includes("src/common")
-includes("src/task_manager")
-includes("src/task_handler")
+includes("src/client")
+includes("src/server")
 includes("src/test_target")
 
 
