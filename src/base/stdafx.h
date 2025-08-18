@@ -43,4 +43,6 @@ using json = nlohmann::json;
 
 // #include <windows.h>
 
+#include <asio.hpp>
+
 #endif // STDAFX_H

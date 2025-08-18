@@ -9,6 +9,7 @@ end
 local packages = {
     "nlohmann_json v3.11.3",
     "spdlog v1.14.1",
+    "asio"
 }
 
 for _, package in ipairs(packages) do
@@ -27,13 +28,12 @@ end
 
 target("Project")
     set_default(true)
-
     set_kind("binary")
-    add_files("src/entry/main.cpp")
 
-    -- set_kind("shared")
-    -- add_files("src/entry/dllmain.cpp")
+    add_includedirs("src/")
+
+    add_files("src/entry/main.cpp")
 
     set_pcxxheader("src/base/stdafx.h")
     add_files("src/base/*.cpp")
-    -- add_files("src/*.cpp")
+
