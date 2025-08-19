@@ -14,6 +14,16 @@ ITask::RET MsgInTask::process(std::shared_ptr<TaskContent> content)
         SPDLOG_LOGGER_ERROR(Logger::Log(), "parse string failed. data: {}", in->task_content.message.data());
         return ITask::RET::FAIL;
     }
-    SPDLOG_LOGGER_INFO(Logger::Log(), "client recv msg: {}", packet.DebugString());
+    if (!packet.has_content())
+    {
+        return ITask::RET::SUCCESS;
+    }
+
+    auto &p_content = packet.content();
+    if (msg_callback_map.contains(p_content.msg_tpye_case()))
+    {
+        msg_callback_map.at(p_content.msg_tpye_case())(packet);
+    }
+
     return ITask::RET::SUCCESS;
 }

@@ -2,11 +2,14 @@
 #include "base/stdafx.h"
 
 #include "client_ipc_manager.h"
-#include "task.h"
+#include "ipc/task.h"
+#include "task_handler.h"
 
 int main(int argc, char *argv[])
 {
     ipc_manager_ptr = std::make_shared<ClientIPCManager>("test_channel");
+
+    TaskHandlerSingleton::instance().Init();
 
     std::thread t_msg_handler(
         []()
@@ -28,7 +31,7 @@ int main(int argc, char *argv[])
                 Packet packet;
                 auto *msg = packet.mutable_content();
                 auto *ping = msg->mutable_ping();
-                ping->set_msg("Hello?");
+                ping->set_msg("Ping?");
 
                 ipc_manager_ptr->send(packet.SerializeAsString());
                 SPDLOG_LOGGER_INFO(Logger::Log(), "Send msg: {}", packet.DebugString());

@@ -107,6 +107,7 @@
         "typeindex": "cpp",
         "variant": "cpp",
         "stdfloat": "cpp",
-        "*.ipp": "cpp"
+        "*.ipp": "cpp",
+        "latch": "cpp"
     }
 }

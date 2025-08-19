@@ -1,6 +1,6 @@
 #include "server_ipc_manager.h"
 
-#include "task.h"
+#include "ipc/task.h"
 
 std::shared_ptr<ServerIPCManager> ipc_manager_ptr;
 

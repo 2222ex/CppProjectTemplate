@@ -2,12 +2,15 @@
 #include "base/logger.h"
 #include "base/stdafx.h"
 
+#include "ipc/task.h"
 #include "server_ipc_manager.h"
-#include "task.h"
+#include "task_handler.h"
 
 int main(int argc, char *argv[])
 {
     ipc_manager_ptr = std::make_shared<ServerIPCManager>("test_channel");
+
+    TaskHandlerSingleton::instance().Init();
 
     std::thread t_ipc_server(
         []()
