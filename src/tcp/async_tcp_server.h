@@ -7,10 +7,12 @@ using asio::ip::tcp;
 class AsyncTcpServer
 {
 private:
-asio::io_context io_context_ public :
+    asio::io_context io_context_;
+
+public:
     AsyncTcpServer(asio::io_context &io_context) :
-    io_context_(io_context),
-    acceptor_(io_context, tcp::endpoint(tcp::v4(), 13))
+        io_context_(io_context),
+        acceptor_(io_context, tcp::endpoint(tcp::v4(), 13))
     {
         start_accept();
     }
