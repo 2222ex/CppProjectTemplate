@@ -19,25 +19,31 @@ using asio::ip::tcp;
 struct HttpResponse
 {
     int status;
-    std::string response;
+    std::string content;
     std::map<std::string, std::string> headers;
+};
+
+enum HttpMethod
+{
+    GET,
+    POST,
+
 };
 
 class SyncHttpClient
 {
 private:
     std::string host;
-    std::string path;
     int port;
     asio::io_context io_context;
 
 public:
-    SyncHttpClient::SyncHttpClient(const std::string &host_, int port_, const std::string &path_) :
-        host(host_), path(path_), port(port_)
+    SyncHttpClient(const std::string &host_, int port_) :
+        host(host_), port(port_)
     {
     }
 
-    std::optional<HttpResponse> request(const std::string &method, const std::map<std::string, std::string> &headers)
+    std::optional<HttpResponse> request(HttpMethod http_method, const std::string &path, const std::map<std::string, std::string> &headers = {})
     {
         try
         {
@@ -54,9 +60,15 @@ public:
             // allow us to treat all data up until the EOF as the content.
             asio::streambuf request;
             std::ostream request_stream(&request);
-            request_stream << "GET " << argv[2] << " HTTP/1.0\r\n";
-            request_stream << "Host: " << argv[1] << "\r\n";
+            request_stream << "GET " << path << " HTTP/1.0\r\n";
+            request_stream << "Host: " << host << "\r\n";
             request_stream << "Accept: */*\r\n";
+
+            for (const auto &pair : headers)
+            {
+                request_stream << pair.first << ": " << pair.second << "\r\n";
+            }
+
             request_stream << "Connection: close\r\n\r\n";
 
             // Send the request.
@@ -79,12 +91,14 @@ public:
             if (!response_stream || http_version.substr(0, 5) != "HTTP/")
             {
                 std::cout << "Invalid response\n";
-                return 1;
+                return {};
             }
+            HttpResponse resp;
+            resp.status = status_code;
             if (status_code != 200)
             {
                 std::cout << "Response returned with status code " << status_code << "\n";
-                return 1;
+                return resp;
             }
 
             // Read the response headers, which are terminated by a blank line.
@@ -93,8 +107,9 @@ public:
             // Process the response headers.
             std::string header;
             while (std::getline(response_stream, header) && header != "\r")
+            {
                 std::cout << header << "\n";
-            std::cout << "\n";
+            }
 
             // Write whatever content we already have to output.
             if (response.size() > 0)
@@ -102,25 +117,26 @@ public:
 
             // Read until EOF, writing data to output as we go.
             std::error_code error;
+
             while (asio::read(socket, response, asio::transfer_at_least(1), error))
-                std::cout << &response;
+            {
+                resp.content.append(asio::buffers_begin(response.data()), asio::buffers_end(response.data()));
+                response.consume(response.size()); // 消费
+            }
+
             if (error != asio::error::eof)
                 throw std::system_error(error);
+
+            return resp;
         }
         catch (std::exception &e)
         {
             std::cout << "Exception: " << e.what() << "\n";
-            return {};
         }
+        return {};
     }
 
-    SyncHttpClient::~SyncHttpClient()
+    ~SyncHttpClient()
     {
     }
 };
-
-int main(int argc, char *argv[])
-{
-
-    return 0;
-}
