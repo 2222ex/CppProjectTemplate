@@ -36,6 +36,8 @@
 #include <utility>
 #include <vector>
 
+#include <httplib.h>
+
 namespace fs = std::filesystem;
 
 #include <nlohmann/json.hpp>

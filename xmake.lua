@@ -9,7 +9,8 @@ end
 local packages = {
     "nlohmann_json v3.11.3",
     "spdlog v1.14.1",
-    "asio"
+    "asio",
+    "cpp-httplib"
 }
 
 for _, package in ipairs(packages) do
@@ -32,8 +33,10 @@ target("Project")
 
     add_includedirs("src/")
 
+    
     add_files("src/entry/main.cpp")
-
     set_pcxxheader("src/base/stdafx.h")
     add_files("src/base/*.cpp")
+    add_files("src/udp_echo/*.cpp")
+    add_files("src/http/*.cpp")
 
