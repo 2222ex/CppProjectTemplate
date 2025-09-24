@@ -10,7 +10,8 @@ local packages = {
     "nlohmann_json v3.11.3",
     "spdlog v1.14.1",
     "asio",
-    "cpp-httplib"
+    "cpp-httplib",
+    "concurrentqueue"
 }
 
 for _, package in ipairs(packages) do
@@ -39,4 +40,5 @@ target("Project")
     add_files("src/base/*.cpp")
     add_files("src/udp_echo/*.cpp")
     add_files("src/http/*.cpp")
+    add_files("src/test_concurrent/*.cpp")
 

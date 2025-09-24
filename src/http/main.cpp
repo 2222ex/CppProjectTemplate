@@ -39,12 +39,12 @@ void sync_http_client()
     }
 }
 
-int main(int argc, char *argv[])
-{
-    std::thread t_http(start_http_server);
-    std::this_thread::sleep_for(std::chrono::milliseconds(100));
+// int main(int argc, char *argv[])
+// {
+//     std::thread t_http(start_http_server);
+//     std::this_thread::sleep_for(std::chrono::milliseconds(100));
 
-    sync_http_client();
-    t_http.join();
-    return 0;
-}
+//     sync_http_client();
+//     t_http.join();
+//     return 0;
+// }
