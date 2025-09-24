@@ -8,7 +8,7 @@ Logger::Logger()
 
 std::shared_ptr<spdlog::logger> Logger::Log()
 {
-    return getLogger("main", true);
+    return getLogger("main");
 }
 
 std::shared_ptr<spdlog::logger> Logger::getLogger(const std::string &logger_name, bool to_console)
