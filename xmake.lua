@@ -10,7 +10,8 @@ local packages = {
     "nlohmann_json v3.11.3",
     "spdlog v1.15.3",
     "minhook",
-    "cpp-httplib"
+    "cpp-httplib",
+    "redis-plus-plus 1.3.12"
 }
 
 for _, package in ipairs(packages) do
