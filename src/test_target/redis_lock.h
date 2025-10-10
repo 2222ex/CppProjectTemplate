@@ -4,9 +4,12 @@
 #include "base/stdafx.h"
 #include "redis_lease_service.h"
 
+#define REDIS_LOCK_DEBUG
+
 class RedisLock
 {
 private:
+    std::shared_ptr<spdlog::logger> logger_;
     sw::redis::Redis *redis;
     std::string key;
     std::string value;
@@ -16,6 +19,18 @@ private:
 
     // 租约由集中服务管理，此处仅保存注册 id
     int lease_id = 0;
+
+    bool acquired_ = false;
+
+    struct HeldInfo
+    {
+        std::string value;
+        int count = 0;
+        int lease_id = 0;
+        int ttl_ms = 0;
+    };
+
+    inline static thread_local std::unordered_map<std::string, HeldInfo> held_;
 
     // 生成唯一锁值（UUIDv4 风格，32位hex）
     static std::string generate_lock_token()
@@ -62,6 +77,7 @@ public:
         max_retries(max_retries)
 
     {
+        logger_ = Logger::getLogger("redis", true);
     }
 
     ~RedisLock()
@@ -71,21 +87,74 @@ public:
 
     bool try_lock()
     {
+
+        auto it = held_.find(key);
+        if (it != held_.end())
+        {
+
+            // 递归重入
+            it->second.count += 1;
+            value = it->second.value;
+            lease_id = it->second.lease_id;
+            acquired_ = true;
+#ifdef REDIS_LOCK_DEBUG
+            SPDLOG_LOGGER_INFO(logger_, "re-entering, depth={}", it->second.count);
+#endif
+            return true;
+        }
+
         for (int i = 0; i < max_retries; ++i)
         {
             if (try_lock_once())
             {
                 // 注册到集中续约服务
                 lease_id = RedisLeaseService::instance().add(redis, key, value, ttl_ms);
+                HeldInfo info;
+                info.value = value;
+                info.count = 1;
+                info.lease_id = lease_id;
+                info.ttl_ms = ttl_ms;
+                held_[key] = info;
+                acquired_ = true;
+#ifdef REDIS_LOCK_DEBUG
+                SPDLOG_LOGGER_INFO(logger_, "acquired lock");
+#endif
                 return true;
             }
+#ifdef REDIS_LOCK_DEBUG
+            SPDLOG_LOGGER_INFO(logger_, "retrying {} / {}", i + 1, max_retries);
+#endif
+
             std::this_thread::sleep_for(std::chrono::milliseconds(retry_interval_ms));
         }
+
         return false;
     }
 
     void unlock()
     {
+        if (!acquired_)
+        {
+            return;
+        }
+
+        auto it = held_.find(key);
+        if (it == held_.end())
+        {
+            acquired_ = false;
+            return; // 未持有锁
+        }
+
+        // 递归释放
+        if (--(it->second.count) > 0)
+        {
+            acquired_ = false;
+#ifdef REDIS_LOCK_DEBUG
+            SPDLOG_LOGGER_INFO(logger_, "lock decrementing depth to {}", it->second.count);
+#endif
+            return;
+        }
+
         // 先停止续约，避免解锁过程中又被续期
         if (lease_id > 0)
         {
@@ -109,7 +178,10 @@ public:
         }
         catch (const std::exception &e)
         {
-            SPDLOG_LOGGER_ERROR(Logger::getLogger("redis"), "RedisLock::unlock error: {}", e.what());
+            SPDLOG_LOGGER_ERROR(logger_, "RedisLock::unlock error: {}", e.what());
         }
+#ifdef REDIS_LOCK_DEBUG
+        SPDLOG_LOGGER_INFO(logger_, "released lock");
+#endif
     }
 };

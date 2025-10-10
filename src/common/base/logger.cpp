@@ -30,7 +30,7 @@ std::shared_ptr<spdlog::logger> Logger::getLogger(const std::string &logger_name
         logger = spdlog::rotating_logger_mt(logger_name, "log/" + logger_name + ".log", max_size, max_files);
     }
 
-    logger->set_pattern("[%H:%M:%S %z][" + logger_name + "][%l]: %v"); // (%@)
+    logger->set_pattern("[%H:%M:%S %z][%t][%^%l%$][%s:%#:%!]: %v"); // (%@)
     logger->set_level(spdlog::level::trace);
     logger->flush_on(spdlog::level::trace);
     loggers[logger_name] = logger;
