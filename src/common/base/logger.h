@@ -12,7 +12,6 @@ class Logger
 {
 public:
     static std::shared_ptr<spdlog::logger> Log();
-
     static std::shared_ptr<spdlog::logger> getLogger(const std::string &logger_name, bool to_console = false);
 
 private:
@@ -20,8 +19,7 @@ private:
     Logger(Logger const &) = delete;
     Logger &operator=(Logger const &) = delete;
 
-    std::shared_ptr<spdlog::logger> rootLogger;
-    static std::unordered_map<std::string, std::shared_ptr<spdlog::logger>> loggers;
+    inline static std::mutex logger_mutex;
 };
 
 #endif // LOGGER_H

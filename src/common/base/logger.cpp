@@ -1,7 +1,5 @@
 ﻿#include "base/logger.h"
 
-std::unordered_map<std::string, std::shared_ptr<spdlog::logger>> Logger::loggers;
-
 Logger::Logger()
 {
 }
@@ -13,12 +11,15 @@ std::shared_ptr<spdlog::logger> Logger::Log()
 
 std::shared_ptr<spdlog::logger> Logger::getLogger(const std::string &logger_name, bool to_console)
 {
-    if (loggers.count(logger_name))
-        return loggers[logger_name];
+    std::lock_guard<std::mutex> lock_instance(logger_mutex);
+
+    std::shared_ptr<spdlog::logger> logger = spdlog::get(logger_name);
+    if (logger)
+        return logger;
 
     auto max_size = 1048576 * 10;
     auto max_files = 20;
-    std::shared_ptr<spdlog::logger> logger;
+
     if (to_console)
     {
         auto console_sink = std::make_shared<spdlog::sinks::stdout_color_sink_mt>();
@@ -33,7 +34,6 @@ std::shared_ptr<spdlog::logger> Logger::getLogger(const std::string &logger_name
     logger->set_pattern("[%Y-%m-%d %H:%M:%S %z][%t][%^%l%$][%s:%#:%!]: %v"); // (%@)
     logger->set_level(spdlog::level::trace);
     logger->flush_on(spdlog::level::trace);
-    loggers[logger_name] = logger;
 
     return logger;
 }
