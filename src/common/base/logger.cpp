@@ -11,9 +11,13 @@ std::shared_ptr<spdlog::logger> Logger::Log()
 
 std::shared_ptr<spdlog::logger> Logger::getLogger(const std::string &logger_name, bool to_console)
 {
+    std::shared_ptr<spdlog::logger> logger = spdlog::get(logger_name);
+    if (logger)
+        return logger;
+
     std::lock_guard<std::mutex> lock_instance(logger_mutex);
 
-    std::shared_ptr<spdlog::logger> logger = spdlog::get(logger_name);
+    logger = spdlog::get(logger_name);
     if (logger)
         return logger;
 
