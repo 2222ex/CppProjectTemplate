@@ -25,12 +25,16 @@ public:
     };
 
     inline static HookInstance<ID, Ret, Args...> *instance = nullptr;
+    inline static std::mutex hook_mutex; // 保护所有共享状态的全局互斥锁
 
     // 公共核心逻辑: 构建回调链并执行
     template<typename OriginalCallFunc>
     inline static Ret ExecuteHookChain(OriginalCallFunc originalCall, Args... args)
     {
-        if (!instance)
+        // 使用单一锁保护所有访问
+        std::lock_guard<std::mutex> lock(hook_mutex);
+
+        if (!instance || !instance->sh_hook)
         {
             return Ret {};
         }
@@ -118,6 +122,7 @@ class HookTemplate : public HookInstance<ID, Ret, Args...>
 public:
     int InstallHook(std::string hook_name, LPVOID pTarget, FuncType func_type)
     {
+        std::lock_guard<std::mutex> lock(HookInstance<ID, Ret, Args...>::hook_mutex);
 
         this->m_hookName = hook_name;
         this->m_target = pTarget;
@@ -136,13 +141,41 @@ public:
         return 0;
     }
 
+    void UninstallHook()
+    {
+        std::lock_guard<std::mutex> lock(HookInstance<ID, Ret, Args...>::hook_mutex);
+        this->sh_hook = {};
+        this->m_callbacks.clear();
+    }
+
     void AddHook(std::string name, std::function<Ret(const std::function<Ret(Args...)> &, Args...)> func)
     {
+        std::lock_guard<std::mutex> lock(HookInstance<ID, Ret, Args...>::hook_mutex);
         this->m_callbacks.push_back({std::move(func), std::move(name)});
+    }
+
+    void RemoveHook(const std::string &name)
+    {
+        std::lock_guard<std::mutex> lock(HookInstance<ID, Ret, Args...>::hook_mutex);
+        auto it = std::remove_if(this->m_callbacks.begin(), this->m_callbacks.end(), [&name](const typename HookInstance<ID, Ret, Args...>::CallbackContext &ctx)
+                                 {
+                                     return ctx.name == name;
+                                 });
+        if (it != this->m_callbacks.end())
+        {
+            this->m_callbacks.erase(it, this->m_callbacks.end());
+        }
+    }
+
+    void RemoveAllHooks()
+    {
+        std::lock_guard<std::mutex> lock(HookInstance<ID, Ret, Args...>::hook_mutex);
+        this->m_callbacks.clear();
     }
 
     ~HookTemplate()
     {
+        std::lock_guard<std::mutex> lock(HookInstance<ID, Ret, Args...>::hook_mutex);
         HookInstance<ID, Ret, Args...>::instance = nullptr;
     }
 };

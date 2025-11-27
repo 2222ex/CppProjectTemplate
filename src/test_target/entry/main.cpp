@@ -50,22 +50,22 @@ void parent_worker()
 int main(int argc, char **argv)
 {
 
-    // std::thread t1 = std::thread(
-    //     [&running]()
-    //     {
-    //         int work_count = 0;
-    //         while (running)
-    //         {
-    //             std::this_thread::sleep_for(std::chrono::milliseconds(1000));
-    //             work_count = work(work_count);
-    //         }
-    //     });
+    std::thread t1 = std::thread(
+        []()
+        {
+            int work_count = 0;
+            while (running)
+            {
+                std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+                work_count = work(work_count);
+            }
+        });
     std::thread t2(parent_worker);
     while (!getchar())
     {
     }
     running = false;
-    // t1.join();
+    t1.join();
     t2.join();
     return 0;
 }
