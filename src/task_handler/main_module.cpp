@@ -3,20 +3,28 @@
 #include "utils/data_transform_util.h"
 #include "utils/pattern_util.h"
 
-#include "MinHook.h"
-
 MainModule::MainModule(/* args */)
 {
     log = Logger::getLogger("main_module", true);
+}
+
+SafetyHookInline sh_hook;
+
+// __thiscall hook 函数: this 通过 ECX, 参数压栈
+static int __fastcall v1_hook(void *thisPtr, void * /*edx_unused*/, int a)
+{
+    SPDLOG_LOGGER_INFO(Logger::getLogger("main_module", true), "hook Parent::v1 a: {}", a);
+    a++; // 修改参数
+    return sh_hook.thiscall<int>(thisPtr, a);
 }
 
 bool MainModule::InitClient(std::string &err_msg)
 {
     auto f1 = [this](uint64_t addr)
     {
-        hook_Work.InstallHook("work", (LPVOID) addr);
+        hook_Work.InstallHook("work", (LPVOID) addr, FuncType::cdeclcall);
         hook_Work.AddHook(
-            "work",
+            "work1",
             [this](auto &next, int work_count)
             {
                 SPDLOG_LOGGER_INFO(log, "hook work1 work_count: {}", work_count);
@@ -39,8 +47,26 @@ bool MainModule::InitClient(std::string &err_msg)
         return true;
     };
 
+    f1((uint64_t) GetProcAddress(hModule, "work"));
+
+    typedef void *(*CreateParentFunc)();
+    CreateParentFunc createParent = (CreateParentFunc) GetProcAddress(hModule, "CreateParent");
+    void *parentObj = createParent();
+    // 获取 vtable
+    void **vtable = *reinterpret_cast<void ***>(parentObj);
+
+    hook_VirtualFunc.InstallHook("Parent::v1", vtable[0], FuncType::fastcall);
+    hook_VirtualFunc.AddHook(
+        "Parent::v1::hook1",
+        [this](auto &next, void *thisPtr, int edx, int a)
+        {
+            SPDLOG_LOGGER_INFO(log, "original a: {}", a);
+            a++;
+            return next(thisPtr, edx, a);
+        });
+
     pattern_map = {
-        {"Work", {"89 4C 24 ?? 56 57 48 81 EC ?? ?? ?? ?? 48 8B 05 ?? ?? ?? ?? 48 33 C4 48 89 84 24 ?? ?? ?? ?? 48 8D 15", 0, f1}}
+        // {"Work", {"53 8B DC 83 EC ?? 83 E4 ?? 83 C4 ?? 55 8B 6B ?? 89 6C 24 ?? 8B EC 6A ?? 68 ?? ?? ?? ?? 64 A1 ?? ?? ?? ?? 50 53 81 EC ?? ?? ?? ?? A1 ?? ?? ?? ?? 33 C5 89 45 ?? 50 8D 45 ?? 64 A3 ?? ?? ?? ?? 68", 0, f1}}
 
     };
 

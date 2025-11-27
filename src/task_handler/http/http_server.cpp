@@ -3,7 +3,6 @@
 #include "base/logger.h"
 #include "main_module.h"
 
-#include <MinHook.h>
 #include <httplib.h>
 #include <nlohmann/json.hpp>
 

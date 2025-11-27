@@ -23,8 +23,8 @@ public:
 
     bool InitClient(std::string &err_msg);
 
-    typedef int (*pWork)(int);
-    HookTemplate<Hook_TestHook, pWork, int, int> hook_Work;
+    HookTemplate<Hook_TestHook, int, int> hook_Work;
+    HookTemplate<Hook_TestHookVirtual, int, void *, int, int> hook_VirtualFunc;
 };
 
 class MainModuleSingleton : public Singleton<MainModule, true>

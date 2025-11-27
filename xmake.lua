@@ -9,7 +9,7 @@ end
 local packages = {
     "nlohmann_json v3.11.3",
     "spdlog v1.15.3",
-    "minhook",
+    "safetyhook",
     "cpp-httplib"
 }
 

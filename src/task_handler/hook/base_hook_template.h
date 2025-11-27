@@ -5,9 +5,16 @@
 #include "base/stdafx.h"
 #include "hook_id.h"
 
-#include <MinHook.h>
+#include <safetyhook.hpp>
 
-template<int ID, typename FuncType, typename Ret, typename... Args>
+enum class FuncType
+{
+    fastcall = 0,
+    thiscall = 1,
+    cdeclcall = 2
+};
+
+template<int ID, typename Ret, typename... Args>
 class HookInstance
 {
 public:
@@ -17,90 +24,116 @@ public:
         std::string name;
     };
 
-    static HookInstance<ID, FuncType, Ret, Args...> *instance;
-    static Ret HookHandler(Args... args);
+    inline static HookInstance<ID, Ret, Args...> *instance = nullptr;
 
-    std::string m_hookName;
-    LPVOID m_target;
-    FuncType m_originalFunc;
-    std::vector<CallbackContext> m_callbacks;
-};
-
-template<int ID, typename FuncType, typename Ret, typename... Args>
-HookInstance<ID, FuncType, Ret, Args...> *HookInstance<ID, FuncType, Ret, Args...>::instance = nullptr;
-
-template<int ID, typename FuncType, typename Ret, typename... Args>
-Ret HookInstance<ID, FuncType, Ret, Args...>::HookHandler(Args... args)
-{
-    if (!instance)
+    // 公共核心逻辑: 构建回调链并执行
+    template<typename OriginalCallFunc>
+    inline static Ret ExecuteHookChain(OriginalCallFunc originalCall, Args... args)
     {
-        return Ret {};
-    }
+        if (!instance)
+        {
+            return Ret {};
+        }
 
-    std::function<Ret(Args...)> next = [](Args... args) -> Ret
-    {
+        // 创建调用原始函数的 lambda
+        std::function<Ret(Args...)> next = [originalCall](Args... args) -> Ret
+        {
+            if constexpr (std::is_void_v<Ret>)
+            {
+                originalCall(args...);
+            }
+            else
+            {
+                return originalCall(args...);
+            }
+        };
+
+        // 构建回调链 (从后往前包装)
+        for (auto it = instance->m_callbacks.rbegin(); it != instance->m_callbacks.rend(); ++it)
+        {
+            auto current = std::move(next);
+            next = [current, &ctx = *it](Args... args) -> Ret
+            {
+                return ctx.func(current, args...);
+            };
+        }
+
+        // 执行回调链
         if constexpr (std::is_void_v<Ret>)
         {
-            // SPDLOG_LOGGER_TRACE(Logger::Log(), "Original return void");
-            instance->m_originalFunc(args...);
+            next(args...);
         }
         else
         {
-
-            Ret ret = instance->m_originalFunc(args...);
-            // SPDLOG_LOGGER_TRACE(Logger::Log(), "Original has return type: {}", ret);
-            // SPDLOG_LOGGER_TRACE(Logger::Log(), "&instance->m_originalFunc: {}", fmt::ptr(&instance->m_originalFunc));
-            return ret;
+            return next(args...);
         }
-    };
-
-    for (auto it = instance->m_callbacks.rbegin(); it != instance->m_callbacks.rend(); ++it)
-    {
-        auto current = std::move(next);
-        next = [current, &ctx = *it](Args... args) -> Ret
-        {
-            // SPDLOG_LOGGER_TRACE(Logger::Log(), "Next: {}", ctx.name);
-            return ctx.func(current, args...);
-        };
     }
 
-    if constexpr (std::is_void_v<Ret>)
+    // __cdecl 调用约定的 Hook 处理器
+    inline static Ret CdeclCallHookHandler(Args... args)
     {
-        next(args...);
+        return ExecuteHookChain(
+            [](Args... args) -> Ret
+            {
+                if constexpr (std::is_void_v<Ret>)
+                {
+                    instance->sh_hook.call(args...);
+                }
+                else
+                {
+                    return instance->sh_hook.call<Ret>(args...);
+                }
+            },
+            args...);
     }
-    else
-    {
-        return next(args...);
-    }
-}
 
-template<int ID, typename FuncType, typename Ret, typename... Args>
-class HookTemplate : public HookInstance<ID, FuncType, Ret, Args...>
+    // __fastcall 调用约定的 Hook 处理器
+    inline static Ret SAFETYHOOK_FASTCALL FastcallHookHandler(Args... args)
+    {
+        return ExecuteHookChain(
+            [](Args... args) -> Ret
+            {
+                if constexpr (std::is_void_v<Ret>)
+                {
+                    instance->sh_hook.fastcall(args...);
+                }
+                else
+                {
+                    return instance->sh_hook.fastcall<Ret>(args...);
+                }
+            },
+            args...);
+    }
+
+    std::string m_hookName;
+    LPVOID m_target;
+    SafetyHookInline sh_hook;
+    FuncType func_type;
+    std::vector<CallbackContext> m_callbacks;
+};
+
+template<int ID, typename Ret, typename... Args>
+class HookTemplate : public HookInstance<ID, Ret, Args...>
 {
 public:
-    MH_STATUS InstallHook(std::string hook_name, LPVOID pTarget)
+    int InstallHook(std::string hook_name, LPVOID pTarget, FuncType func_type)
     {
 
         this->m_hookName = hook_name;
         this->m_target = pTarget;
-        HookInstance<ID, FuncType, Ret, Args...>::instance = this;
+        this->func_type = func_type;
+        HookInstance<ID, Ret, Args...>::instance = this;
 
-        MH_STATUS mh_status = MH_OK;
-        if ((mh_status = MH_CreateHook(
-                 this->m_target,
-                 reinterpret_cast<LPVOID>(&HookInstance<ID, FuncType, Ret, Args...>::HookHandler),
-                 reinterpret_cast<LPVOID *>(&this->m_originalFunc))) != MH_OK)
+        if (func_type == FuncType::cdeclcall)
         {
-            SPDLOG_LOGGER_WARN(Logger::Log(), "MH_CreateHook {} failed, status: {}", this->m_hookName, (int) mh_status);
-            return mh_status;
+            this->sh_hook = safetyhook::create_inline(this->m_target, reinterpret_cast<LPVOID>(&HookInstance<ID, Ret, Args...>::CdeclCallHookHandler));
+        }
+        else if (func_type == FuncType::fastcall)
+        {
+            this->sh_hook = safetyhook::create_inline(this->m_target, reinterpret_cast<LPVOID>(&HookInstance<ID, Ret, Args...>::FastcallHookHandler));
         }
 
-        if ((mh_status = MH_EnableHook(this->m_target)) != MH_OK)
-        {
-            SPDLOG_LOGGER_WARN(Logger::Log(), "MH_EnableHook {} failed, status: {}", this->m_hookName, (int) mh_status);
-            return mh_status;
-        }
-        return mh_status;
+        return 0;
     }
 
     void AddHook(std::string name, std::function<Ret(const std::function<Ret(Args...)> &, Args...)> func)
@@ -110,7 +143,7 @@ public:
 
     ~HookTemplate()
     {
-        HookInstance<ID, FuncType, Ret, Args...>::instance = nullptr;
+        HookInstance<ID, Ret, Args...>::instance = nullptr;
     }
 };
 

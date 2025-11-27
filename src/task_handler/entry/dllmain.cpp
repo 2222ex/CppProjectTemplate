@@ -4,8 +4,6 @@
 #include "base/logger.h"
 #include "base/stdafx.h"
 
-#include <MinHook.h>
-
 #include "../task_handler/http/http_server.h"
 #include "../task_manager/http/http_server.h"
 
@@ -30,16 +28,6 @@ bool Init()
     httplib::Client cli("localhost", TaskManagerHttpServer::kPort);
     std::string err_msg;
 
-    if (MH_Initialize() != MH_OK)
-    {
-        err_msg = "MH_Initialize failed";
-        InitResult init_result = {false, err_msg};
-        nlohmann::json json_init_result = init_result;
-        cli.Post(TaskManagerHttpServer::kDllInitFailedRequestPath, json_init_result.dump(), "application/json");
-        SPDLOG_LOGGER_ERROR(logger, "{}", err_msg);
-        return false;
-    }
-
     auto &main = MainModuleSingleton::instance();
     main.InitModuleInfo();
 
@@ -63,11 +51,6 @@ void Detach()
 {
     std::shared_ptr<spdlog::logger> logger = Logger::getLogger("main2", true);
     SPDLOG_LOGGER_INFO(logger, "Prepare to detach this module");
-
-    if (MH_Uninitialize() != MH_OK)
-    {
-        SPDLOG_LOGGER_ERROR(logger, "MH_Uninitialize failed");
-    }
 }
 
 bool __stdcall DllMain(HANDLE hInstance, DWORD dwReason, LPVOID lpReserved)
