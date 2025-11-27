@@ -39,5 +39,7 @@ std::shared_ptr<spdlog::logger> Logger::getLogger(const std::string &logger_name
     logger->set_level(spdlog::level::trace);
     logger->flush_on(spdlog::level::trace);
 
+    spdlog::register_logger(logger);
+
     return logger;
 }
