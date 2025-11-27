@@ -111,7 +111,7 @@ bool MainWindow::Init()
         ImGui::NewFrame();
 
         TestWindowSingleton::instance().render_window();
-        ProdWindowSingleton::instance().render_window();
+        // ProdWindowSingleton::instance().render_window();
 
         ImGui::Render();
         g_pd3dDeviceContext->OMSetRenderTargets(1, &g_mainRenderTargetView, nullptr);
