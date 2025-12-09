@@ -1,6 +1,7 @@
 ﻿
 
 #include "../task_handler/main_module.h"
+#include "../task_handler/rendersystemdx11_module.h"
 #include "base/logger.h"
 #include "base/stdafx.h"
 
@@ -28,23 +29,15 @@ bool Init()
     httplib::Client cli("localhost", TaskManagerHttpServer::kPort);
     std::string err_msg;
 
-    auto &main = MainModuleSingleton::instance();
-    main.InitModuleInfo();
+    auto &render = Rendersystemdx11ModuleSingleton::instance();
+    render.InitModuleInfo("rendersystemdx11.dll");
+    render.Init();
 
-    if (main.InitClient(err_msg) == false)
-    {
-        InitResult init_result = {false, err_msg};
-        nlohmann::json json_init_result = init_result;
-        cli.Post(TaskManagerHttpServer::kDllInitFailedRequestPath, json_init_result.dump(), "application/json");
-        SPDLOG_LOGGER_ERROR(logger, "main init failed: {}", err_msg);
-        return false;
-    }
-
-    err_msg = "";
     InitResult init_result = {true, err_msg};
     nlohmann::json json_init_result = init_result;
     cli.Post(TaskManagerHttpServer::kDllInitSuccRequestPath, json_init_result.dump(), "application/json");
     SPDLOG_LOGGER_INFO(logger, "dll init success");
+    return true;
 }
 
 void Detach()
