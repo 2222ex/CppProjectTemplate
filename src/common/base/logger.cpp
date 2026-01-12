@@ -36,7 +36,7 @@ std::shared_ptr<spdlog::logger> Logger::getLogger(const std::string &logger_name
         logger = std::make_shared<spdlog::logger>(logger_name, spdlog::sinks_init_list {file_sink});
     }
 
-    logger->set_pattern("[%Y-%m-%d %H:%M:%S %z][%t][%^%l%$][%s:%#:%!]: %v"); // (%@)
+    logger->set_pattern("[%Y-%m-%d %H:%M:%S][%t][%^%l%$][%s:%#:%!]: %v"); // (%@)
     logger->set_level(spdlog::level::trace);
     logger->flush_on(spdlog::level::trace);
 

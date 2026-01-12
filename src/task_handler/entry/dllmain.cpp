@@ -2,6 +2,7 @@
 
 #include "../task_handler/main_module.h"
 #include "../task_handler/rendersystemdx11_module.h"
+#include "../task_handler/scenesystem.h"
 #include "base/logger.h"
 #include "base/stdafx.h"
 
@@ -32,6 +33,10 @@ bool Init()
     auto &render = Rendersystemdx11ModuleSingleton::instance();
     render.InitModuleInfo("rendersystemdx11.dll");
     render.Init();
+
+    auto &scene = ScenesystemModuleSingleton::instance();
+    scene.InitModuleInfo("scenesystem.dll");
+    scene.Init();
 
     InitResult init_result = {true, err_msg};
     nlohmann::json json_init_result = init_result;
